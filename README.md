@@ -44,7 +44,8 @@ Cloud Messaging, Crashlytics), Google Maps, geolocator, wger API, OpenStreetMap 
 ## Структура репозитория
 
 - `lib/`, `test/` — приложение
-- `dart_tasks/` — задачи недели 1 на Dart: null safety, классы, коллекции, async/await
+- `lib/features/workout/domain/` — задачи недели 1 на Dart (null safety, классы, коллекции, async/await),
+  написанные сразу как доменная логика приложения; тесты — в `test/features/workout/domain/`
 
 ## Запуск
 
@@ -53,9 +54,8 @@ flutter pub get
 flutter run
 ```
 
-Dart-задачи:
+Тесты:
 
 ```bash
-cd dart_tasks
-dart test
+flutter test
 ```
