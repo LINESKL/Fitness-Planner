@@ -38,4 +38,13 @@ void main() {
     expect(find.text('Подтягивания'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
   });
+
+  testWidgets('«Начать тренировку» открывает экран тренировки', (tester) async {
+    await tester.pumpWidget(const FitnessPlannerApp());
+    await tester.tap(find.text('Начать тренировку'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Тренировка'), findsOneWidget);
+    expect(find.text('Жим лёжа'), findsOneWidget);
+  });
 }
