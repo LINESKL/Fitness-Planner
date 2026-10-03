@@ -45,3 +45,14 @@ Map<String, int> sessionsPerExercise(Iterable<ExerciseLog> logs) {
   }
   return counts;
 }
+
+/// Тренировки — логи, сгруппированные по календарному дню, от новых к старым.
+List<List<ExerciseLog>> workoutsByDay(Iterable<ExerciseLog> logs) {
+  final byDay = <DateTime, List<ExerciseLog>>{};
+  for (final log in logs) {
+    final day = DateTime(log.date.year, log.date.month, log.date.day);
+    byDay.putIfAbsent(day, () => []).add(log);
+  }
+  final days = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
+  return [for (final day in days) byDay[day]!];
+}

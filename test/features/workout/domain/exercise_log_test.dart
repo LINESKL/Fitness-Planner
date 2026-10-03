@@ -66,4 +66,33 @@ void main() {
       expect(sessionsPerExercise(logs), {'Жим лёжа': 3, 'Присед': 1});
     });
   });
+
+  group('workoutsByDay', () {
+    test('группирует логи одного дня, новые дни первыми', () {
+      final days = workoutsByDay([
+        ExerciseLog(
+          exercise: 'Присед',
+          date: DateTime(2026, 9, 20, 9),
+          sets: const [s80x8],
+        ),
+        ExerciseLog(
+          exercise: 'Жим лёжа',
+          date: DateTime(2026, 9, 27, 18),
+          sets: const [s80x8],
+        ),
+        ExerciseLog(
+          exercise: 'Тяга',
+          date: DateTime(2026, 9, 27, 19),
+          sets: const [s75x10],
+        ),
+      ]);
+
+      expect(days.map((d) => d.length), [2, 1]);
+      expect(days.first.map((l) => l.exercise), ['Жим лёжа', 'Тяга']);
+    });
+
+    test('пустой ввод — пустой список', () {
+      expect(workoutsByDay([]), isEmpty);
+    });
+  });
 }
