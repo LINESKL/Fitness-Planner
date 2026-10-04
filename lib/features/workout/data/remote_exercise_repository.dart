@@ -1,4 +1,3 @@
-import '../domain/exercise.dart';
 import '../domain/exercise_repository.dart';
 import 'sample_data.dart';
 import 'wger/wger_api.dart';
@@ -11,14 +10,15 @@ class RemoteExerciseRepository implements ExerciseRepository {
   final WgerApi _api;
 
   @override
-  Future<List<Exercise>> fetchExercises() async {
+  Future<ExerciseCatalog> fetchExercises() async {
     final remote = await _api.fetchExercises();
     final seen = {for (final e in sampleExercises) e.name.toLowerCase()};
-    return [
+    final items = [
       ...sampleExercises,
       for (final dto in remote)
         if (dto.toExercise() case final e? when seen.add(e.name.toLowerCase()))
           e,
     ];
+    return (items: items, offline: false);
   }
 }

@@ -12,6 +12,25 @@ class ExercisesScreen extends ConsumerWidget {
   /// Если задан, экран работает как выбор упражнения.
   final ValueChanged<Exercise>? onSelected;
 
+  Widget _list(WidgetRef ref, List<Exercise> list) {
+    if (list.isEmpty) {
+      return const MessageView(
+        icon: Icons.search_off,
+        text: 'Ничего не нашлось',
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(exercisesProvider.future),
+      child: ListView.builder(
+        itemCount: list.length,
+        itemBuilder: (context, i) => _ExerciseTile(
+          exercise: list[i],
+          onTap: onSelected == null ? null : () => onSelected!(list[i]),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
@@ -31,23 +50,12 @@ class ExercisesScreen extends ConsumerWidget {
           child: ref
               .watch(filteredExercisesProvider)
               .when(
-                data: (list) => list.isEmpty
-                    ? const MessageView(
-                        icon: Icons.search_off,
-                        text: 'Ничего не нашлось',
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () => ref.refresh(exercisesProvider.future),
-                        child: ListView.builder(
-                          itemCount: list.length,
-                          itemBuilder: (context, i) => _ExerciseTile(
-                            exercise: list[i],
-                            onTap: onSelected == null
-                                ? null
-                                : () => onSelected!(list[i]),
-                          ),
-                        ),
-                      ),
+                data: (catalog) => Column(
+                  children: [
+                    if (catalog.offline) const _OfflineBanner(),
+                    Expanded(child: _list(ref, catalog.items)),
+                  ],
+                ),
                 error: (error, _) => MessageView(
                   icon: Icons.cloud_off,
                   text: error is ExerciseLoadException
@@ -60,6 +68,24 @@ class ExercisesScreen extends ConsumerWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      color: scheme.secondaryContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        'Нет сети — показан сохранённый каталог',
+        style: TextStyle(color: scheme.onSecondaryContainer),
+      ),
     );
   }
 }

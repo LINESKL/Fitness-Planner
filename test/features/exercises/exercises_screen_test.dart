@@ -14,12 +14,13 @@ class FakeExerciseRepository implements ExerciseRepository {
   int calls = 0;
 
   @override
-  Future<List<Exercise>> fetchExercises() async {
+  Future<ExerciseCatalog> fetchExercises() async {
     final response =
         responses[calls < responses.length ? calls : responses.length - 1];
     calls++;
     if (response is Exception) throw response;
-    return response as List<Exercise>;
+    if (response is ExerciseCatalog) return response;
+    return (items: response as List<Exercise>, offline: false);
   }
 }
 
@@ -110,5 +111,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repo.calls, 2);
+  });
+
+  testWidgets('каталог из кэша — баннер «нет сети»', (tester) async {
+    await pump(tester, [(items: exercises, offline: true)]);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Нет сети — показан сохранённый каталог'), findsOneWidget);
+    expect(find.text('Приседания'), findsOneWidget);
   });
 }

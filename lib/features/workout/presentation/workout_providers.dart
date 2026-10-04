@@ -7,7 +7,6 @@ import '../data/remote_exercise_repository.dart';
 import '../data/sample_data.dart';
 import '../data/wger/wger_api.dart';
 import '../domain/active_workout.dart';
-import '../domain/exercise.dart';
 import '../domain/exercise_log.dart';
 import '../domain/exercise_repository.dart';
 import '../domain/workout_repository.dart';
@@ -21,7 +20,7 @@ final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => RemoteExerciseRepository(WgerApi.create()),
 );
 
-final exercisesProvider = FutureProvider<List<Exercise>>(
+final exercisesProvider = FutureProvider<ExerciseCatalog>(
   (ref) => ref.watch(exerciseRepositoryProvider).fetchExercises(),
   // Повтор — по кнопке на экране ошибки, без фоновых попыток.
   retry: (_, _) => null,
@@ -51,19 +50,22 @@ class ExerciseQueryNotifier extends Notifier<String> {
 }
 
 final filteredExercisesProvider =
-    Provider.autoDispose<AsyncValue<List<Exercise>>>((ref) {
+    Provider.autoDispose<AsyncValue<ExerciseCatalog>>((ref) {
       final query = ref.watch(exerciseQueryProvider);
       return ref
           .watch(exercisesProvider)
           .whenData(
-            (list) => query.isEmpty
-                ? list
-                : [
-                    for (final e in list)
-                      if (e.name.toLowerCase().contains(query) ||
-                          e.muscleGroup.toLowerCase().contains(query))
-                        e,
-                  ],
+            (catalog) => query.isEmpty
+                ? catalog
+                : (
+                    items: [
+                      for (final e in catalog.items)
+                        if (e.name.toLowerCase().contains(query) ||
+                            e.muscleGroup.toLowerCase().contains(query))
+                          e,
+                    ],
+                    offline: catalog.offline,
+                  ),
           );
     });
 

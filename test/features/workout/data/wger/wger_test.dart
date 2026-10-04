@@ -169,8 +169,11 @@ void main() {
       }),
     );
 
-    final list = await RemoteExerciseRepository(apiWith(adapter))
+    final catalog = await RemoteExerciseRepository(apiWith(adapter))
         .fetchExercises();
+    final list = catalog.items;
+
+    expect(catalog.offline, isFalse);
 
     expect(list.first.name, 'Жим лёжа');
     expect(list.where((e) => e.name.toLowerCase() == 'приседания').length, 1);
