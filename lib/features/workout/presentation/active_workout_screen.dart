@@ -32,8 +32,16 @@ class ActiveWorkoutScreen extends ConsumerWidget {
 
   Future<void> _finish(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(activeWorkoutProvider.notifier).finish();
+    } on Object {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Не удалось сохранить тренировку')),
+      );
+      return;
+    }
     ref.read(restTimerProvider.notifier).skip();
-    await ref.read(activeWorkoutProvider.notifier).finish();
     navigator.pop();
   }
 
@@ -210,15 +218,13 @@ class _ExerciseCard extends StatelessWidget {
                   initial: set.weight == 0 ? '' : formatWeight(set.weight),
                   decimal: true,
                   onChanged: (text) {
-                    final v = double.tryParse(text.replaceAll(',', '.'));
-                    if (v != null && v >= 0) onWeight(j, v);
+                    if (parseWeightInput(text) case final v?) onWeight(j, v);
                   },
                 ),
                 reps: _NumberField(
                   initial: set.reps == 0 ? '' : '${set.reps}',
                   onChanged: (text) {
-                    final v = int.tryParse(text);
-                    if (v != null && v >= 0) onReps(j, v);
+                    if (parseRepsInput(text) case final v?) onReps(j, v);
                   },
                 ),
                 trailing: Checkbox(
@@ -310,4 +316,17 @@ class _SetRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Пустое поле — 0; мусор, бесконечность и отрицательные — null (значение не меняется).
+double? parseWeightInput(String text) {
+  if (text.trim().isEmpty) return 0;
+  final v = double.tryParse(text.trim().replaceAll(',', '.'));
+  return v != null && v.isFinite && v >= 0 ? v.abs() : null;
+}
+
+int? parseRepsInput(String text) {
+  if (text.trim().isEmpty) return 0;
+  final v = int.tryParse(text.trim());
+  return v != null && v >= 0 ? v : null;
 }

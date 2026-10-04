@@ -143,6 +143,30 @@ void main() {
       );
     });
 
+    test('битая запись пропускается, остальные разбираются', () async {
+      final adapter = FakeAdapter(
+        (_) => jsonBody({
+          'results': [
+            {...exerciseJson(id: 1), 'category': null},
+            exerciseJson(id: 2),
+          ],
+        }),
+      );
+
+      final list = await apiWith(adapter).fetchExercises();
+
+      expect(list.map((e) => e.id), [2]);
+    });
+
+    test('ответ не того формата — ExerciseLoadException', () async {
+      final adapter = FakeAdapter((_) => jsonBody({'results': 'oops'}));
+
+      expect(
+        apiWith(adapter).fetchExercises(),
+        throwsA(isA<ExerciseLoadException>()),
+      );
+    });
+
     test('ошибка сервера — код в сообщении', () async {
       final adapter = FakeAdapter((_) => jsonBody({'detail': 'x'}, 503));
 

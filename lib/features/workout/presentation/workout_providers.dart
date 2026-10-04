@@ -27,49 +27,6 @@ final exercisesProvider = FutureProvider<ExerciseCatalog>(
   retry: (_, _) => null,
 );
 
-/// Строка поиска по каталогу; применяется через 300 мс после последнего ввода.
-final exerciseQueryProvider =
-    NotifierProvider.autoDispose<ExerciseQueryNotifier, String>(
-      ExerciseQueryNotifier.new,
-    );
-
-class ExerciseQueryNotifier extends Notifier<String> {
-  static const debounce = Duration(milliseconds: 300);
-
-  Timer? _timer;
-
-  @override
-  String build() {
-    ref.onDispose(() => _timer?.cancel());
-    return '';
-  }
-
-  void search(String text) {
-    _timer?.cancel();
-    _timer = Timer(debounce, () => state = text.trim().toLowerCase());
-  }
-}
-
-final filteredExercisesProvider =
-    Provider.autoDispose<AsyncValue<ExerciseCatalog>>((ref) {
-      final query = ref.watch(exerciseQueryProvider);
-      return ref
-          .watch(exercisesProvider)
-          .whenData(
-            (catalog) => query.isEmpty
-                ? catalog
-                : (
-                    items: [
-                      for (final e in catalog.items)
-                        if (e.name.toLowerCase().contains(query) ||
-                            e.muscleGroup.toLowerCase().contains(query))
-                          e,
-                    ],
-                    offline: catalog.offline,
-                  ),
-          );
-    });
-
 final historyProvider =
     AsyncNotifierProvider<HistoryNotifier, List<ExerciseLog>>(
       HistoryNotifier.new,
@@ -124,13 +81,14 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
     update((w) => w.addExercise(name, history));
   }
 
+  /// Сначала сохраняет, потом закрывает: при ошибке записи тренировка не теряется.
   Future<void> finish({DateTime? now}) async {
     final current = state;
     if (current == null) return;
-    state = null;
     await ref
         .read(historyProvider.notifier)
         .add(current.toLogs(now ?? DateTime.now()));
+    state = null;
   }
 }
 

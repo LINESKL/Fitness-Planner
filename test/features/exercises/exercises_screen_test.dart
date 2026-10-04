@@ -120,4 +120,32 @@ void main() {
     expect(find.text('Нет сети — показан сохранённый каталог'), findsOneWidget);
     expect(find.text('Приседания'), findsOneWidget);
   });
+
+  testWidgets('у каждого экрана каталога свой поиск', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          exerciseRepositoryProvider.overrideWithValue(
+            FakeExerciseRepository([exercises]),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: Row(
+              children: [
+                Expanded(child: ExercisesScreen()),
+                Expanded(child: ExercisesScreen()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'жим');
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+    expect(find.text('Приседания'), findsOneWidget);
+  });
 }

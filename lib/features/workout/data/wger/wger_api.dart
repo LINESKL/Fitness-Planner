@@ -28,13 +28,22 @@ class WgerApi {
         'exerciseinfo/',
         queryParameters: {'limit': 1000},
       );
-      final results = response.data?['results'] as List<dynamic>? ?? const [];
-      return [
-        for (final json in results)
-          WgerExerciseDto.fromJson(json as Map<String, dynamic>),
-      ];
+      final results = response.data?['results'];
+      if (results is! List) {
+        throw const ExerciseLoadException('Сервер вернул неожиданный ответ');
+      }
+      return [for (final json in results) ?_parse(json)];
     } on DioException catch (e) {
       throw ExerciseLoadException(_messageFor(e));
+    }
+  }
+
+  /// Одна битая запись не должна ронять весь каталог.
+  static WgerExerciseDto? _parse(Object? json) {
+    try {
+      return WgerExerciseDto.fromJson(json! as Map<String, dynamic>);
+    } on Object {
+      return null;
     }
   }
 

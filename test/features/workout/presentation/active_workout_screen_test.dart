@@ -26,13 +26,17 @@ void main() {
 
   late ProviderContainer container;
 
-  Future<void> pump(WidgetTester tester, {int restSeconds = 0}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    int restSeconds = 0,
+    InMemoryWorkoutRepository? repository,
+  }) async {
     SharedPreferences.setMockInitialValues({'rest_seconds': restSeconds});
     final prefs = await SharedPreferences.getInstance();
     container = ProviderContainer.test(
       overrides: [
         workoutRepositoryProvider.overrideWithValue(
-          InMemoryWorkoutRepository(history),
+          repository ?? InMemoryWorkoutRepository(history),
         ),
         exerciseRepositoryProvider.overrideWithValue(
           const LocalExerciseRepository(),
@@ -178,4 +182,45 @@ void main() {
 
     expect(find.textContaining('Отдых'), findsNothing);
   });
+
+  testWidgets('стёртый вес сохраняется как 0, а не прошлое значение', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.enterText(field(0), '');
+    await tester.tap(find.byType(Checkbox).first);
+    await finish(tester);
+
+    expect(saved().single.sets.single.weight, 0);
+  });
+
+  testWidgets('бесконечность в поле веса игнорируется', (tester) async {
+    await pump(tester);
+    await tester.enterText(field(0), 'Infinity');
+    await tester.tap(find.byType(Checkbox).first);
+    await finish(tester);
+
+    expect(saved().single.sets.single.weight, 80);
+  });
+
+  testWidgets('ошибка сохранения — тренировка остаётся, показано сообщение', (
+    tester,
+  ) async {
+    await pump(tester, repository: FailingWorkoutRepository(history));
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.tap(find.text('Завершить'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось сохранить тренировку'), findsOneWidget);
+    expect(container.read(activeWorkoutProvider), isNotNull);
+    expect(find.text('Жим лёжа'), findsOneWidget);
+  });
+}
+
+class FailingWorkoutRepository extends InMemoryWorkoutRepository {
+  FailingWorkoutRepository(super.seed);
+
+  @override
+  Future<void> addLogs(List<ExerciseLog> logs) async =>
+      throw StateError('диск переполнен');
 }
