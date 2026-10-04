@@ -5,13 +5,13 @@ import '../domain/set_entry.dart';
 // Статичные данные недели 2; с недели 5–6 их заменят API и Hive.
 
 const sampleExercises = [
-  Exercise(name: 'Жим лёжа', muscleGroup: 'Грудь'),
-  Exercise(name: 'Тяга штанги в наклоне', muscleGroup: 'Спина'),
-  Exercise(name: 'Подтягивания', muscleGroup: 'Спина'),
-  Exercise(name: 'Приседания', muscleGroup: 'Ноги'),
-  Exercise(name: 'Румынская тяга', muscleGroup: 'Ноги'),
-  Exercise(name: 'Жим стоя', muscleGroup: 'Плечи'),
-  Exercise(name: 'Сгибания на бицепс', muscleGroup: 'Руки'),
+  Exercise(id: 'local-1', name: 'Жим лёжа', muscleGroup: 'Грудь'),
+  Exercise(id: 'local-2', name: 'Тяга штанги в наклоне', muscleGroup: 'Спина'),
+  Exercise(id: 'local-3', name: 'Подтягивания', muscleGroup: 'Спина'),
+  Exercise(id: 'local-4', name: 'Приседания', muscleGroup: 'Ноги'),
+  Exercise(id: 'local-5', name: 'Румынская тяга', muscleGroup: 'Ноги'),
+  Exercise(id: 'local-6', name: 'Жим стоя', muscleGroup: 'Плечи'),
+  Exercise(id: 'local-7', name: 'Сгибания на бицепс', muscleGroup: 'Руки'),
 ];
 
 List<SetEntry> _sets(double weight, List<int> reps) => [
