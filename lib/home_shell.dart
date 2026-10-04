@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'features/exercises/presentation/exercises_screen.dart';
 import 'features/history/presentation/history_screen.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/workout/data/sample_data.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
-import 'features/workout/presentation/workout_scope.dart';
+import 'features/workout/presentation/workout_store.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -20,7 +21,7 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
   void _startWorkout() {
-    WorkoutScope.of(context).start(sampleTodayPlan);
+    context.read<WorkoutStore>().start(sampleTodayPlan);
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const ActiveWorkoutScreen()),
     );

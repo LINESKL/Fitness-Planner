@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/format.dart';
 import '../../workout/data/sample_data.dart';
 import '../../workout/domain/exercise_log.dart';
 import '../../workout/domain/set_entry.dart';
-import '../../workout/presentation/workout_scope.dart';
+import '../../workout/presentation/workout_store.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.onStartWorkout});
@@ -13,12 +14,13 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final last = workoutsByDay(WorkoutScope.of(context).history).firstOrNull;
+    final store = context.watch<WorkoutStore>();
+    final last = workoutsByDay(store.history).firstOrNull;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _StartCard(onStart: onStartWorkout),
+        _StartCard(onStart: onStartWorkout, inProgress: store.active != null),
         const SizedBox(height: 16),
         if (last != null) _LastWorkoutCard(logs: last),
         const SizedBox(height: 16),
@@ -35,9 +37,10 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _StartCard extends StatelessWidget {
-  const _StartCard({required this.onStart});
+  const _StartCard({required this.onStart, required this.inProgress});
 
   final VoidCallback onStart;
+  final bool inProgress;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +67,7 @@ class _StartCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Готов к тренировке?',
+                  inProgress ? 'Тренировка идёт' : 'Готов к тренировке?',
                   style: text.titleLarge?.copyWith(
                     color: scheme.onPrimaryContainer,
                   ),
@@ -80,7 +83,9 @@ class _StartCard extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onStart,
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Начать тренировку'),
+                  label: Text(
+                    inProgress ? 'Продолжить тренировку' : 'Начать тренировку',
+                  ),
                 ),
               ],
             ),

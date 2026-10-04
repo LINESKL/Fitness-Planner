@@ -61,4 +61,14 @@ void main() {
 
     expect(find.text(formatDate(DateTime.now())), findsOneWidget);
   });
+
+  testWidgets('после выхода назад тренировку можно продолжить', (tester) async {
+    await tester.pumpWidget(const FitnessPlannerApp());
+    await tester.tap(find.text('Начать тренировку'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Продолжить тренировку'), findsOneWidget);
+  });
 }

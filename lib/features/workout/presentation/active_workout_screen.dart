@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../exercises/presentation/exercises_screen.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/set_entry.dart';
-import 'workout_scope.dart';
 import 'workout_store.dart';
 
 /// Активная тренировка: по карточке на упражнение с таблицей подходов.
@@ -32,7 +32,7 @@ class ActiveWorkoutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = WorkoutScope.of(context);
+    final store = context.watch<WorkoutStore>();
     final workout = store.active;
     // После «Завершить» экран ещё виден на время анимации закрытия.
     if (workout == null) return const Scaffold();

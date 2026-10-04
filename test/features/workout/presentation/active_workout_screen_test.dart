@@ -1,10 +1,10 @@
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/presentation/active_workout_screen.dart';
-import 'package:fitness_planner/features/workout/presentation/workout_scope.dart';
 import 'package:fitness_planner/features/workout/presentation/workout_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   final history = [
@@ -25,8 +25,8 @@ void main() {
     store = WorkoutStore(history: history)
       ..start(const ['Жим лёжа', 'Подтягивания']);
     return tester.pumpWidget(
-      WorkoutScope(
-        store: store,
+      ChangeNotifierProvider.value(
+        value: store,
         child: const MaterialApp(home: ActiveWorkoutScreen()),
       ),
     );
