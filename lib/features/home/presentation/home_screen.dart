@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
 import '../../workout/domain/exercise_log.dart';
@@ -7,9 +8,12 @@ import '../../workout/domain/set_entry.dart';
 import '../../workout/presentation/workout_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key, required this.onStartWorkout});
+  const HomeScreen({super.key});
 
-  final VoidCallback onStartWorkout;
+  Future<void> _start(BuildContext context, WidgetRef ref) async {
+    await ref.read(activeWorkoutProvider.notifier).start();
+    if (context.mounted) await context.pushNamed('workout');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       children: [
         _StartCard(
-          onStart: onStartWorkout,
+          onStart: () => _start(context, ref),
           inProgress: inProgress,
           plan: [for (final log in last ?? const <ExerciseLog>[]) log.exercise],
         ),

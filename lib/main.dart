@@ -5,6 +5,8 @@ import 'package:provider/provider.dart' show ChangeNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'features/auth/data/local_auth_repository.dart';
+import 'features/auth/presentation/auth_providers.dart';
 import 'features/settings/presentation/settings_model.dart';
 import 'features/workout/data/hive/cached_exercise_repository.dart';
 import 'features/workout/data/hive/hive_workout_repository.dart';
@@ -26,6 +28,7 @@ Future<void> main() async {
       overrides: [
         workoutRepositoryProvider.overrideWithValue(workouts),
         exerciseRepositoryProvider.overrideWithValue(exercises),
+        authRepositoryProvider.overrideWithValue(LocalAuthRepository(prefs)),
       ],
       child: ChangeNotifierProvider(
         create: (_) => SettingsModel(prefs),

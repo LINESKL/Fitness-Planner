@@ -1,69 +1,80 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'features/exercises/presentation/exercises_screen.dart';
-import 'features/history/presentation/history_screen.dart';
-import 'features/home/presentation/home_screen.dart';
-import 'features/settings/presentation/settings_screen.dart';
-import 'features/workout/presentation/active_workout_screen.dart';
-import 'features/workout/presentation/workout_providers.dart';
+import 'core/widgets/max_width.dart';
 
-class HomeShell extends ConsumerStatefulWidget {
-  const HomeShell({super.key});
+/// Оболочка с вкладками: нижняя панель на телефоне, боковая — на широком экране.
+class HomeShell extends StatelessWidget {
+  const HomeShell({super.key, required this.shell});
 
-  @override
-  ConsumerState<HomeShell> createState() => _HomeShellState();
-}
+  final StatefulNavigationShell shell;
 
-class _HomeShellState extends ConsumerState<HomeShell> {
-  static const _titles = ['Главная', 'История', 'Упражнения'];
+  static const _tabs = [
+    (icon: Icons.home_outlined, selected: Icons.home, label: 'Главная'),
+    (icon: Icons.history, selected: Icons.history, label: 'История'),
+    (
+      icon: Icons.fitness_center,
+      selected: Icons.fitness_center,
+      label: 'Упражнения',
+    ),
+  ];
 
-  int _index = 0;
+  /// С этой ширины (планшет, альбомная ориентация) — боковая панель.
+  static const wideBreakpoint = 600.0;
 
-  Future<void> _startWorkout() async {
-    await ref.read(activeWorkoutProvider.notifier).start();
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ActiveWorkoutScreen()),
-    );
-  }
+  void _select(int index) =>
+      shell.goBranch(index, initialLocation: index == shell.currentIndex);
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= wideBreakpoint;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_index]),
+        title: Text(_tabs[shell.currentIndex].label),
         actions: [
           IconButton(
             tooltip: 'Настройки',
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            onPressed: () => context.pushNamed('settings'),
+          ),
+        ],
+      ),
+      body: wide
+          ? Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: shell.currentIndex,
+                  onDestinationSelected: _select,
+                  labelType: NavigationRailLabelType.all,
+                  destinations: [
+                    for (final tab in _tabs)
+                      NavigationRailDestination(
+                        icon: Icon(tab.icon),
+                        selectedIcon: Icon(tab.selected),
+                        label: Text(tab.label),
+                      ),
+                  ],
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: MaxWidth(child: shell)),
+              ],
+            )
+          : shell,
+      bottomNavigationBar: wide
+          ? null
+          : NavigationBar(
+              selectedIndex: shell.currentIndex,
+              onDestinationSelected: _select,
+              destinations: [
+                for (final tab in _tabs)
+                  NavigationDestination(
+                    icon: Icon(tab.icon),
+                    selectedIcon: Icon(tab.selected),
+                    label: tab.label,
+                  ),
+              ],
             ),
-          ),
-        ],
-      ),
-      body: switch (_index) {
-        0 => HomeScreen(onStartWorkout: _startWorkout),
-        1 => const HistoryScreen(),
-        _ => const ExercisesScreen(),
-      },
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Главная',
-          ),
-          NavigationDestination(icon: Icon(Icons.history), label: 'История'),
-          NavigationDestination(
-            icon: Icon(Icons.fitness_center),
-            label: 'Упражнения',
-          ),
-        ],
-      ),
     );
   }
 }

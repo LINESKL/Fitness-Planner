@@ -10,4 +10,8 @@ void main() {
     expect(formatDuration(const Duration(seconds: 90)), '1:30');
     expect(formatDuration(const Duration(seconds: 5)), '0:05');
   });
+
+  test('ключ дня для адреса', () {
+    expect(formatDayKey(DateTime(2026, 9, 7, 18, 30)), '2026-09-07');
+  });
 }

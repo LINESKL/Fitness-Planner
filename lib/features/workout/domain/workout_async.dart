@@ -5,8 +5,11 @@ import 'set_entry.dart';
 Future<String> lastTimeSummary(
   Future<List<ExerciseLog>> Function() loadLogs,
   String exercise,
-) async {
-  final log = lastTime(await loadLogs(), exercise);
+) async => summarizeLastTime(await loadLogs(), exercise);
+
+/// То же, что [lastTimeSummary], для уже загруженной истории.
+String summarizeLastTime(Iterable<ExerciseLog> logs, String exercise) {
+  final log = lastTime(logs, exercise);
   if (log == null) return 'Ещё не делали';
 
   return log.sets

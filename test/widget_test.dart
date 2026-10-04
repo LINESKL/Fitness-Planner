@@ -1,36 +1,8 @@
-import 'package:fitness_planner/app.dart';
 import 'package:fitness_planner/core/format.dart';
-import 'package:fitness_planner/features/settings/presentation/settings_model.dart';
-import 'package:fitness_planner/features/workout/data/local_exercise_repository.dart';
-import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' show ChangeNotifierProvider;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> pumpApp(WidgetTester tester) async {
-  // Таймер отдыха выключен, чтобы тесты не ждали его.
-  SharedPreferences.setMockInitialValues({'rest_seconds': 0});
-  final prefs = await SharedPreferences.getInstance();
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        exerciseRepositoryProvider.overrideWithValue(
-          const LocalExerciseRepository(),
-        ),
-      ],
-      child: ChangeNotifierProvider(
-        create: (_) => SettingsModel(prefs),
-        child: const FitnessPlannerApp(),
-      ),
-    ),
-  );
-  await tester.pumpAndSettle();
-}
-
-Finder navItem(String label) =>
-    find.descendant(of: find.byType(NavigationBar), matching: find.text(label));
+import 'helpers/pump_app.dart';
 
 void main() {
   testWidgets('стартует на главной', (tester) async {

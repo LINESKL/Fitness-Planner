@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
 import '../../../core/widgets/message_view.dart';
@@ -47,6 +48,10 @@ class _HistoryList extends StatelessWidget {
           title: Text(formatDate(logs.first.date)),
           subtitle: Text(logs.map((l) => l.exercise).join(', ')),
           trailing: Text('${formatWeight(volume)} кг'),
+          onTap: () => context.pushNamed(
+            'workoutDetails',
+            pathParameters: {'day': formatDayKey(logs.first.date)},
+          ),
         );
       },
     );
