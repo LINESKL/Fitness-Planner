@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../workout/data/sample_data.dart';
+import '../../../core/widgets/message_view.dart';
 import '../../workout/domain/exercise.dart';
+import '../../workout/presentation/workout_providers.dart';
 
-class ExercisesScreen extends StatelessWidget {
+class ExercisesScreen extends ConsumerWidget {
   const ExercisesScreen({super.key, this.onSelected});
 
   /// Если задан, экран работает как выбор упражнения.
   final ValueChanged<Exercise>? onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         const Padding(
@@ -24,18 +26,29 @@ class ExercisesScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: sampleExercises.length,
-            itemBuilder: (context, i) {
-              final exercise = sampleExercises[i];
-              return ListTile(
-                leading: CircleAvatar(child: Text(exercise.name[0])),
-                title: Text(exercise.name),
-                subtitle: Text(exercise.muscleGroup),
-                onTap: onSelected == null ? null : () => onSelected!(exercise),
-              );
-            },
-          ),
+          child: switch (ref.watch(exercisesProvider)) {
+            AsyncData(:final value) => ListView.builder(
+              itemCount: value.length,
+              itemBuilder: (context, i) {
+                final exercise = value[i];
+                return ListTile(
+                  leading: CircleAvatar(child: Text(exercise.name[0])),
+                  title: Text(exercise.name),
+                  subtitle: Text(exercise.muscleGroup),
+                  onTap: onSelected == null
+                      ? null
+                      : () => onSelected!(exercise),
+                );
+              },
+            ),
+            AsyncError() => MessageView(
+              icon: Icons.error_outline,
+              text: 'Не удалось загрузить упражнения',
+              actionLabel: 'Повторить',
+              onAction: () => ref.invalidate(exercisesProvider),
+            ),
+            _ => const Center(child: CircularProgressIndicator()),
+          },
         ),
       ],
     );

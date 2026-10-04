@@ -14,8 +14,6 @@ const sampleExercises = [
   Exercise(name: 'Сгибания на бицепс', muscleGroup: 'Руки'),
 ];
 
-const sampleTodayPlan = ['Жим лёжа', 'Тяга штанги в наклоне', 'Подтягивания'];
-
 List<SetEntry> _sets(double weight, List<int> reps) => [
   for (final r in reps) SetEntry(weight: weight, reps: r),
 ];

@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/exercises/presentation/exercises_screen.dart';
 import 'features/history/presentation/history_screen.dart';
 import 'features/home/presentation/home_screen.dart';
-import 'features/workout/data/sample_data.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
-import 'features/workout/presentation/workout_store.dart';
+import 'features/workout/presentation/workout_providers.dart';
 
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell> {
   static const _titles = ['Главная', 'История', 'Упражнения'];
 
   int _index = 0;
 
-  void _startWorkout() {
-    context.read<WorkoutStore>().start(sampleTodayPlan);
-    Navigator.of(context).push(
+  Future<void> _startWorkout() async {
+    await ref.read(activeWorkoutProvider.notifier).start();
+    if (!mounted) return;
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const ActiveWorkoutScreen()),
     );
   }

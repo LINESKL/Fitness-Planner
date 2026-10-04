@@ -1,21 +1,27 @@
 import 'package:fitness_planner/app.dart';
 import 'package:fitness_planner/core/format.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+Future<void> pumpApp(WidgetTester tester) async {
+  await tester.pumpWidget(const ProviderScope(child: FitnessPlannerApp()));
+  await tester.pumpAndSettle();
+}
 
 Finder navItem(String label) =>
     find.descendant(of: find.byType(NavigationBar), matching: find.text(label));
 
 void main() {
   testWidgets('стартует на главной', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
 
     expect(find.text('Начать тренировку'), findsOneWidget);
     expect(find.text('Последняя тренировка'), findsOneWidget);
   });
 
   testWidgets('светлая и тёмная тема', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
     expect(app.theme?.brightness, Brightness.light);
@@ -23,7 +29,7 @@ void main() {
   });
 
   testWidgets('вкладка История показывает тренировки по дням', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
     await tester.tap(navItem('История'));
     await tester.pumpAndSettle();
 
@@ -32,7 +38,7 @@ void main() {
   });
 
   testWidgets('вкладка Упражнения показывает каталог', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
     await tester.tap(navItem('Упражнения'));
     await tester.pumpAndSettle();
 
@@ -41,16 +47,16 @@ void main() {
   });
 
   testWidgets('«Начать тренировку» открывает экран тренировки', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
     await tester.tap(find.text('Начать тренировку'));
     await tester.pumpAndSettle();
 
     expect(find.text('Тренировка'), findsOneWidget);
-    expect(find.text('Жим лёжа'), findsOneWidget);
+    expect(find.text('Приседания'), findsOneWidget);
   });
 
   testWidgets('завершённая тренировка появляется в истории', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
     await tester.tap(find.text('Начать тренировку'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(Checkbox).first);
@@ -63,7 +69,7 @@ void main() {
   });
 
   testWidgets('после выхода назад тренировку можно продолжить', (tester) async {
-    await tester.pumpWidget(const FitnessPlannerApp());
+    await pumpApp(tester);
     await tester.tap(find.text('Начать тренировку'));
     await tester.pumpAndSettle();
     await tester.pageBack();

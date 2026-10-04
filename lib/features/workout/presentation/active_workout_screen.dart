@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../exercises/presentation/exercises_screen.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/set_entry.dart';
-import 'workout_store.dart';
+import 'workout_providers.dart';
 
 /// Активная тренировка: по карточке на упражнение с таблицей подходов.
-class ActiveWorkoutScreen extends StatelessWidget {
+class ActiveWorkoutScreen extends ConsumerWidget {
   const ActiveWorkoutScreen({super.key});
 
-  Future<void> _pickExercise(BuildContext context, WorkoutStore store) async {
+  Future<void> _pickExercise(BuildContext context, WidgetRef ref) async {
     final name = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (context) => Scaffold(
@@ -22,18 +22,22 @@ class ActiveWorkoutScreen extends StatelessWidget {
         ),
       ),
     );
-    if (name != null) store.update((w) => w.addExercise(name, store.history));
+    if (name != null) {
+      await ref.read(activeWorkoutProvider.notifier).addExercise(name);
+    }
   }
 
-  void _finish(BuildContext context, WorkoutStore store) {
-    store.finish();
-    Navigator.of(context).pop();
+  Future<void> _finish(BuildContext context, WidgetRef ref) async {
+    final navigator = Navigator.of(context);
+    await ref.read(activeWorkoutProvider.notifier).finish();
+    navigator.pop();
   }
 
   @override
-  Widget build(BuildContext context) {
-    final store = context.watch<WorkoutStore>();
-    final workout = store.active;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workout = ref.watch(activeWorkoutProvider);
+    final history = ref.watch(historyProvider).value ?? const <ExerciseLog>[];
+    final notifier = ref.read(activeWorkoutProvider.notifier);
     // После «Завершить» экран ещё виден на время анимации закрытия.
     if (workout == null) return const Scaffold();
 
@@ -42,7 +46,7 @@ class ActiveWorkoutScreen extends StatelessWidget {
         title: const Text('Тренировка'),
         actions: [
           TextButton(
-            onPressed: () => _finish(context, store),
+            onPressed: () => _finish(context, ref),
             child: const Text('Завершить'),
           ),
         ],
@@ -56,19 +60,28 @@ class ActiveWorkoutScreen extends StatelessWidget {
               exercise: exercise,
               previous: [
                 for (final s
-                    in lastTime(store.history, exercise.name)?.sets ??
+                    in lastTime(history, exercise.name)?.sets ??
                         const <SetEntry>[])
                   if (!s.isWarmup) s,
               ],
-              onToggle: (j) => store.update((w) => w.toggleDone(i, j)),
+              onToggle: (j) => notifier.update((w) => w.toggleDone(i, j)),
               onWeight: (j, v) =>
-                  store.update((w) => w.updateSet(i, j, weight: v)),
-              onReps: (j, v) => store.update((w) => w.updateSet(i, j, reps: v)),
-              onAddSet: () => store.update((w) => w.addSet(i)),
+                  notifier.update((w) => w.updateSet(i, j, weight: v)),
+              onReps: (j, v) =>
+                  notifier.update((w) => w.updateSet(i, j, reps: v)),
+              onAddSet: () => notifier.update((w) => w.addSet(i)),
+            ),
+          if (workout.exercises.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'Добавьте первое упражнение',
+                textAlign: TextAlign.center,
+              ),
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () => _pickExercise(context, store),
+            onPressed: () => _pickExercise(context, ref),
             icon: const Icon(Icons.add),
             label: const Text('Добавить упражнение'),
           ),

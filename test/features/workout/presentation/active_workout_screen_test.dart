@@ -1,10 +1,11 @@
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/presentation/active_workout_screen.dart';
-import 'package:fitness_planner/features/workout/presentation/workout_store.dart';
+import 'package:fitness_planner/features/workout/data/in_memory_workout_repository.dart';
+import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
   final history = [
@@ -19,20 +20,32 @@ void main() {
     ),
   ];
 
-  late WorkoutStore store;
+  late ProviderContainer container;
 
-  Future<void> pump(WidgetTester tester) {
-    store = WorkoutStore(history: history)
-      ..start(const ['Жим лёжа', 'Подтягивания']);
-    return tester.pumpWidget(
-      ChangeNotifierProvider.value(
-        value: store,
+  Future<void> pump(WidgetTester tester) async {
+    container = ProviderContainer.test(
+      overrides: [
+        workoutRepositoryProvider.overrideWithValue(
+          InMemoryWorkoutRepository(history),
+        ),
+      ],
+    );
+    await container
+        .read(activeWorkoutProvider.notifier)
+        .start(plan: const ['Жим лёжа', 'Подтягивания']);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: ActiveWorkoutScreen()),
       ),
     );
   }
 
-  List<ExerciseLog> saved() => store.history.skip(history.length).toList();
+  List<ExerciseLog> saved() => container
+      .read(historyProvider)
+      .requireValue
+      .skip(history.length)
+      .toList();
 
   Future<void> finish(WidgetTester tester) async {
     await tester.tap(find.text('Завершить'));

@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format.dart';
-import '../../workout/data/sample_data.dart';
 import '../../workout/domain/exercise_log.dart';
 import '../../workout/domain/set_entry.dart';
-import '../../workout/presentation/workout_store.dart';
+import '../../workout/presentation/workout_providers.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key, required this.onStartWorkout});
 
   final VoidCallback onStartWorkout;
 
   @override
-  Widget build(BuildContext context) {
-    final store = context.watch<WorkoutStore>();
-    final last = workoutsByDay(store.history).firstOrNull;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(historyProvider).value ?? const [];
+    final last = workoutsByDay(history).firstOrNull;
+    final inProgress = ref.watch(activeWorkoutProvider) != null;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _StartCard(onStart: onStartWorkout, inProgress: store.active != null),
+        _StartCard(
+          onStart: onStartWorkout,
+          inProgress: inProgress,
+          plan: [for (final log in last ?? const <ExerciseLog>[]) log.exercise],
+        ),
         const SizedBox(height: 16),
         if (last != null) _LastWorkoutCard(logs: last),
         const SizedBox(height: 16),
@@ -37,10 +41,17 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _StartCard extends StatelessWidget {
-  const _StartCard({required this.onStart, required this.inProgress});
+  const _StartCard({
+    required this.onStart,
+    required this.inProgress,
+    required this.plan,
+  });
 
   final VoidCallback onStart;
   final bool inProgress;
+
+  /// Упражнения, с которых начнётся тренировка.
+  final List<String> plan;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +85,7 @@ class _StartCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  sampleTodayPlan.join(' · '),
+                  plan.isEmpty ? 'Пустая тренировка' : plan.join(' · '),
                   style: text.bodyMedium?.copyWith(
                     color: scheme.onPrimaryContainer,
                   ),
