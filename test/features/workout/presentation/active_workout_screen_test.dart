@@ -1,6 +1,8 @@
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/presentation/active_workout_screen.dart';
+import 'package:fitness_planner/features/workout/presentation/workout_scope.dart';
+import 'package:fitness_planner/features/workout/presentation/workout_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,20 +19,20 @@ void main() {
     ),
   ];
 
-  late List<ExerciseLog> saved;
+  late WorkoutStore store;
 
   Future<void> pump(WidgetTester tester) {
-    saved = [];
+    store = WorkoutStore(history: history)
+      ..start(const ['Жим лёжа', 'Подтягивания']);
     return tester.pumpWidget(
-      MaterialApp(
-        home: ActiveWorkoutScreen(
-          plan: const ['Жим лёжа', 'Подтягивания'],
-          history: history,
-          onFinish: saved.addAll,
-        ),
+      WorkoutScope(
+        store: store,
+        child: const MaterialApp(home: ActiveWorkoutScreen()),
       ),
     );
   }
+
+  List<ExerciseLog> saved() => store.history.skip(history.length).toList();
 
   Future<void> finish(WidgetTester tester) async {
     await tester.tap(find.text('Завершить'));
@@ -92,8 +94,8 @@ void main() {
     await tester.tap(find.byType(Checkbox).first);
     await finish(tester);
 
-    expect(saved.single.exercise, 'Жим лёжа');
-    expect(saved.single.sets.map((s) => (s.weight, s.reps)), [(82.5, 9)]);
+    expect(saved().single.exercise, 'Жим лёжа');
+    expect(saved().single.sets.map((s) => (s.weight, s.reps)), [(82.5, 9)]);
   });
 
   testWidgets('мусор в поле веса не портит значение', (tester) async {
@@ -102,14 +104,14 @@ void main() {
     await tester.tap(find.byType(Checkbox).first);
     await finish(tester);
 
-    expect(saved.single.sets.single.weight, 80);
+    expect(saved().single.sets.single.weight, 80);
   });
 
   testWidgets('без отметок история не пополняется', (tester) async {
     await pump(tester);
     await finish(tester);
 
-    expect(saved, isEmpty);
+    expect(saved(), isEmpty);
   });
 
   testWidgets('«Добавить упражнение» открывает каталог и добавляет выбранное', (

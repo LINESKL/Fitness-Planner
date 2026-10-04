@@ -3,15 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../core/format.dart';
 import '../../workout/domain/exercise_log.dart';
 import '../../workout/domain/set_entry.dart';
+import '../../workout/presentation/workout_scope.dart';
 
 class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({super.key, required this.history});
-
-  final List<ExerciseLog> history;
+  const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final workouts = workoutsByDay(history);
+    final workouts = workoutsByDay(WorkoutScope.of(context).history);
 
     return ListView.builder(
       itemCount: workouts.length,

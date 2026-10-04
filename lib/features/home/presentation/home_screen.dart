@@ -4,20 +4,16 @@ import '../../../core/format.dart';
 import '../../workout/data/sample_data.dart';
 import '../../workout/domain/exercise_log.dart';
 import '../../workout/domain/set_entry.dart';
+import '../../workout/presentation/workout_scope.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    super.key,
-    required this.history,
-    required this.onStartWorkout,
-  });
+  const HomeScreen({super.key, required this.onStartWorkout});
 
-  final List<ExerciseLog> history;
   final VoidCallback onStartWorkout;
 
   @override
   Widget build(BuildContext context) {
-    final last = workoutsByDay(history).firstOrNull;
+    final last = workoutsByDay(WorkoutScope.of(context).history).firstOrNull;
 
     return ListView(
       padding: const EdgeInsets.all(16),

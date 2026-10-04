@@ -4,35 +4,14 @@ import '../../exercises/presentation/exercises_screen.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/set_entry.dart';
+import 'workout_scope.dart';
+import 'workout_store.dart';
 
 /// Активная тренировка: по карточке на упражнение с таблицей подходов.
-class ActiveWorkoutScreen extends StatefulWidget {
-  const ActiveWorkoutScreen({
-    super.key,
-    required this.plan,
-    required this.history,
-    required this.onFinish,
-  });
+class ActiveWorkoutScreen extends StatelessWidget {
+  const ActiveWorkoutScreen({super.key});
 
-  final List<String> plan;
-  final List<ExerciseLog> history;
-  final void Function(List<ExerciseLog> logs) onFinish;
-
-  @override
-  State<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
-}
-
-class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
-  late ActiveWorkout _workout = ActiveWorkout.start(
-    startedAt: DateTime.now(),
-    plan: widget.plan,
-    history: widget.history,
-  );
-
-  void _update(ActiveWorkout Function(ActiveWorkout w) change) =>
-      setState(() => _workout = change(_workout));
-
-  Future<void> _pickExercise() async {
+  Future<void> _pickExercise(BuildContext context, WorkoutStore store) async {
     final name = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (context) => Scaffold(
@@ -43,44 +22,53 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         ),
       ),
     );
-    if (name != null) _update((w) => w.addExercise(name, widget.history));
+    if (name != null) store.update((w) => w.addExercise(name, store.history));
   }
 
-  void _finish() {
-    widget.onFinish(_workout.toLogs(DateTime.now()));
+  void _finish(BuildContext context, WorkoutStore store) {
+    store.finish();
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final store = WorkoutScope.of(context);
+    final workout = store.active;
+    // После «Завершить» экран ещё виден на время анимации закрытия.
+    if (workout == null) return const Scaffold();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Тренировка'),
         actions: [
-          TextButton(onPressed: _finish, child: const Text('Завершить')),
+          TextButton(
+            onPressed: () => _finish(context, store),
+            child: const Text('Завершить'),
+          ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          for (final (i, exercise) in _workout.exercises.indexed)
+          for (final (i, exercise) in workout.exercises.indexed)
             _ExerciseCard(
               key: ValueKey(i),
               exercise: exercise,
               previous: [
                 for (final s
-                    in lastTime(widget.history, exercise.name)?.sets ??
+                    in lastTime(store.history, exercise.name)?.sets ??
                         const <SetEntry>[])
                   if (!s.isWarmup) s,
               ],
-              onToggle: (j) => _update((w) => w.toggleDone(i, j)),
-              onWeight: (j, v) => _update((w) => w.updateSet(i, j, weight: v)),
-              onReps: (j, v) => _update((w) => w.updateSet(i, j, reps: v)),
-              onAddSet: () => _update((w) => w.addSet(i)),
+              onToggle: (j) => store.update((w) => w.toggleDone(i, j)),
+              onWeight: (j, v) =>
+                  store.update((w) => w.updateSet(i, j, weight: v)),
+              onReps: (j, v) => store.update((w) => w.updateSet(i, j, reps: v)),
+              onAddSet: () => store.update((w) => w.addSet(i)),
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: _pickExercise,
+            onPressed: () => _pickExercise(context, store),
             icon: const Icon(Icons.add),
             label: const Text('Добавить упражнение'),
           ),

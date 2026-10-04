@@ -5,6 +5,7 @@ import 'features/history/presentation/history_screen.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/workout/data/sample_data.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
+import 'features/workout/presentation/workout_scope.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -18,26 +19,20 @@ class _HomeShellState extends State<HomeShell> {
 
   int _index = 0;
 
-  /// Пока без хранилища: история живёт в состоянии оболочки.
-  final _history = [...sampleHistory];
-
-  void _startWorkout() => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => ActiveWorkoutScreen(
-        plan: sampleTodayPlan,
-        history: _history,
-        onFinish: (logs) => setState(() => _history.addAll(logs)),
-      ),
-    ),
-  );
+  void _startWorkout() {
+    WorkoutScope.of(context).start(sampleTodayPlan);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ActiveWorkoutScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(_titles[_index])),
       body: switch (_index) {
-        0 => HomeScreen(history: _history, onStartWorkout: _startWorkout),
-        1 => HistoryScreen(history: _history),
+        0 => HomeScreen(onStartWorkout: _startWorkout),
+        1 => const HistoryScreen(),
         _ => const ExercisesScreen(),
       },
       bottomNavigationBar: NavigationBar(
