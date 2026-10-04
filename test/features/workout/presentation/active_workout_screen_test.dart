@@ -17,14 +17,35 @@ void main() {
     ),
   ];
 
-  Future<void> pump(WidgetTester tester) => tester.pumpWidget(
-    MaterialApp(
-      home: ActiveWorkoutScreen(
-        plan: const ['Жим лёжа', 'Подтягивания'],
-        history: history,
+  late List<ExerciseLog> saved;
+
+  Future<void> pump(WidgetTester tester) {
+    saved = [];
+    return tester.pumpWidget(
+      MaterialApp(
+        home: ActiveWorkoutScreen(
+          plan: const ['Жим лёжа', 'Подтягивания'],
+          history: history,
+          onFinish: saved.addAll,
+        ),
       ),
-    ),
-  );
+    );
+  }
+
+  Future<void> finish(WidgetTester tester) async {
+    await tester.tap(find.text('Завершить'));
+    await tester.pumpAndSettle();
+  }
+
+  Finder field(int index) => find.byType(TextField).at(index);
+
+  // Поля ввода тоже прокручиваемые — берём сам список.
+  Future<void> scrollTo(WidgetTester tester, String text) =>
+      tester.scrollUntilVisible(
+        find.text(text),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
 
   testWidgets('колонка «Прошлый» — рабочие подходы прошлой тренировки', (
     tester,
@@ -52,5 +73,56 @@ void main() {
 
     expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isTrue);
     expect(tester.widget<Checkbox>(find.byType(Checkbox).last).value, isFalse);
+  });
+
+  testWidgets('«Добавить подход» копирует последний подход', (tester) async {
+    await pump(tester);
+    await tester.tap(find.text('Добавить подход').first);
+    await tester.pump();
+
+    expect(find.byType(Checkbox), findsNWidgets(4));
+  });
+
+  testWidgets('завершение сохраняет только отмеченные подходы с правками', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.enterText(field(0), '82,5');
+    await tester.enterText(field(1), '9');
+    await tester.tap(find.byType(Checkbox).first);
+    await finish(tester);
+
+    expect(saved.single.exercise, 'Жим лёжа');
+    expect(saved.single.sets.map((s) => (s.weight, s.reps)), [(82.5, 9)]);
+  });
+
+  testWidgets('мусор в поле веса не портит значение', (tester) async {
+    await pump(tester);
+    await tester.enterText(field(0), 'abc');
+    await tester.tap(find.byType(Checkbox).first);
+    await finish(tester);
+
+    expect(saved.single.sets.single.weight, 80);
+  });
+
+  testWidgets('без отметок история не пополняется', (tester) async {
+    await pump(tester);
+    await finish(tester);
+
+    expect(saved, isEmpty);
+  });
+
+  testWidgets('«Добавить упражнение» открывает каталог и добавляет выбранное', (
+    tester,
+  ) async {
+    await pump(tester);
+    await scrollTo(tester, 'Добавить упражнение');
+    await tester.tap(find.text('Добавить упражнение'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Приседания'));
+    await tester.pumpAndSettle();
+    await scrollTo(tester, 'Приседания');
+
+    expect(find.text('Приседания'), findsOneWidget);
   });
 }

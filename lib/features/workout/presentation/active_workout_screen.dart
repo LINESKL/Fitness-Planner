@@ -1,31 +1,55 @@
 import 'package:flutter/material.dart';
 
-import '../data/sample_data.dart';
+import '../../exercises/presentation/exercises_screen.dart';
+import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/set_entry.dart';
 
 /// Активная тренировка: по карточке на упражнение с таблицей подходов.
 class ActiveWorkoutScreen extends StatefulWidget {
-  ActiveWorkoutScreen({
+  const ActiveWorkoutScreen({
     super.key,
-    this.plan = sampleTodayPlan,
-    List<ExerciseLog>? history,
-  }) : history = history ?? sampleHistory;
+    required this.plan,
+    required this.history,
+    required this.onFinish,
+  });
 
   final List<String> plan;
   final List<ExerciseLog> history;
+  final void Function(List<ExerciseLog> logs) onFinish;
 
   @override
   State<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
 }
 
 class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
-  /// Выполненные подходы: (номер упражнения, номер подхода).
-  final _done = <(int, int)>{};
+  late ActiveWorkout _workout = ActiveWorkout.start(
+    startedAt: DateTime.now(),
+    plan: widget.plan,
+    history: widget.history,
+  );
 
-  void _toggle((int, int) set) => setState(() {
-    if (!_done.remove(set)) _done.add(set);
-  });
+  void _update(ActiveWorkout Function(ActiveWorkout w) change) =>
+      setState(() => _workout = change(_workout));
+
+  Future<void> _pickExercise() async {
+    final name = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('Выбор упражнения')),
+          body: ExercisesScreen(
+            onSelected: (e) => Navigator.of(context).pop(e.name),
+          ),
+        ),
+      ),
+    );
+    if (name != null) _update((w) => w.addExercise(name, widget.history));
+  }
+
+  void _finish() {
+    widget.onFinish(_workout.toLogs(DateTime.now()));
+    Navigator.of(context).pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,30 +57,30 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
       appBar: AppBar(
         title: const Text('Тренировка'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Завершить'),
-          ),
+          TextButton(onPressed: _finish, child: const Text('Завершить')),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          for (final (i, name) in widget.plan.indexed)
+          for (final (i, exercise) in _workout.exercises.indexed)
             _ExerciseCard(
-              name: name,
-              previous:
-                  lastTime(
-                    widget.history,
-                    name,
-                  )?.sets.where((s) => !s.isWarmup).toList() ??
-                  const [],
-              isDone: (j) => _done.contains((i, j)),
-              onToggle: (j) => _toggle((i, j)),
+              key: ValueKey(i),
+              exercise: exercise,
+              previous: [
+                for (final s
+                    in lastTime(widget.history, exercise.name)?.sets ??
+                        const <SetEntry>[])
+                  if (!s.isWarmup) s,
+              ],
+              onToggle: (j) => _update((w) => w.toggleDone(i, j)),
+              onWeight: (j, v) => _update((w) => w.updateSet(i, j, weight: v)),
+              onReps: (j, v) => _update((w) => w.updateSet(i, j, reps: v)),
+              onAddSet: () => _update((w) => w.addSet(i)),
             ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: _pickExercise,
             icon: const Icon(Icons.add),
             label: const Text('Добавить упражнение'),
           ),
@@ -68,16 +92,21 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
-    required this.name,
+    super.key,
+    required this.exercise,
     required this.previous,
-    required this.isDone,
     required this.onToggle,
+    required this.onWeight,
+    required this.onReps,
+    required this.onAddSet,
   });
 
-  final String name;
+  final ActiveExercise exercise;
   final List<SetEntry> previous;
-  final bool Function(int set) isDone;
   final void Function(int set) onToggle;
+  final void Function(int set, double weight) onWeight;
+  final void Function(int set, int reps) onReps;
+  final VoidCallback onAddSet;
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +114,6 @@ class _ExerciseCard extends StatelessWidget {
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
-    // Без истории — одна пустая строка, чтобы было куда записать первый подход.
-    final rows = previous.isEmpty ? 1 : previous.length;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -96,7 +123,7 @@ class _ExerciseCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              name,
+              exercise.name,
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.primary,
               ),
@@ -113,31 +140,74 @@ class _ExerciseCard extends StatelessWidget {
                 trailing: SizedBox(width: 48),
               ),
             ),
-            for (var j = 0; j < rows; j++)
+            for (final (j, set) in exercise.sets.indexed)
               _SetRow(
-                highlighted: isDone(j),
+                highlighted: set.done,
                 number: Text('${j + 1}'),
                 previous: Text(
-                  previous.isEmpty
-                      ? '—'
-                      : '${formatWeight(previous[j].weight)} × ${previous[j].reps}',
+                  j < previous.length
+                      ? '${formatWeight(previous[j].weight)} × ${previous[j].reps}'
+                      : '—',
                   style: muted,
                 ),
-                weight: Text(
-                  previous.isEmpty ? '—' : formatWeight(previous[j].weight),
+                weight: _NumberField(
+                  initial: set.weight == 0 ? '' : formatWeight(set.weight),
+                  decimal: true,
+                  onChanged: (text) {
+                    final v = double.tryParse(text.replaceAll(',', '.'));
+                    if (v != null && v >= 0) onWeight(j, v);
+                  },
                 ),
-                reps: Text(previous.isEmpty ? '—' : '${previous[j].reps}'),
+                reps: _NumberField(
+                  initial: set.reps == 0 ? '' : '${set.reps}',
+                  onChanged: (text) {
+                    final v = int.tryParse(text);
+                    if (v != null && v >= 0) onReps(j, v);
+                  },
+                ),
                 trailing: Checkbox(
-                  value: isDone(j),
+                  value: set.done,
                   onChanged: (_) => onToggle(j),
                 ),
               ),
             TextButton.icon(
-              onPressed: () {},
+              onPressed: onAddSet,
               icon: const Icon(Icons.add),
               label: const Text('Добавить подход'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Компактное поле для числа в таблице подходов.
+class _NumberField extends StatelessWidget {
+  const _NumberField({
+    required this.initial,
+    required this.onChanged,
+    this.decimal = false,
+  });
+
+  final String initial;
+  final ValueChanged<String> onChanged;
+  final bool decimal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: TextFormField(
+        initialValue: initial,
+        onChanged: onChanged,
+        keyboardType: TextInputType.numberWithOptions(decimal: decimal),
+        textAlign: TextAlign.center,
+        decoration: const InputDecoration(
+          isDense: true,
+          hintText: '0',
+          contentPadding: EdgeInsets.symmetric(vertical: 8),
+          border: OutlineInputBorder(),
         ),
       ),
     );
@@ -165,6 +235,7 @@ class _SetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: highlighted
             ? Theme.of(context).colorScheme.secondaryContainer
@@ -176,8 +247,8 @@ class _SetRow extends StatelessWidget {
         children: [
           SizedBox(width: 28, child: number),
           Expanded(child: previous),
-          SizedBox(width: 56, child: weight),
-          SizedBox(width: 44, child: reps),
+          SizedBox(width: 64, child: weight),
+          SizedBox(width: 52, child: reps),
           trailing,
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:fitness_planner/app.dart';
+import 'package:fitness_planner/core/format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,5 +47,18 @@ void main() {
 
     expect(find.text('Тренировка'), findsOneWidget);
     expect(find.text('Жим лёжа'), findsOneWidget);
+  });
+
+  testWidgets('завершённая тренировка появляется в истории', (tester) async {
+    await tester.pumpWidget(const FitnessPlannerApp());
+    await tester.tap(find.text('Начать тренировку'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.tap(find.text('Завершить'));
+    await tester.pumpAndSettle();
+    await tester.tap(navItem('История'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(formatDate(DateTime.now())), findsOneWidget);
   });
 }
