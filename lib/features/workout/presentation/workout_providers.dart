@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/in_memory_workout_repository.dart';
-import '../data/local_exercise_repository.dart';
+import '../data/remote_exercise_repository.dart';
 import '../data/sample_data.dart';
+import '../data/wger/wger_api.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise.dart';
 import '../domain/exercise_log.dart';
@@ -15,12 +18,54 @@ final workoutRepositoryProvider = Provider<WorkoutRepository>(
 );
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
-  (ref) => const LocalExerciseRepository(),
+  (ref) => RemoteExerciseRepository(WgerApi.create()),
 );
 
 final exercisesProvider = FutureProvider<List<Exercise>>(
   (ref) => ref.watch(exerciseRepositoryProvider).fetchExercises(),
+  // Повтор — по кнопке на экране ошибки, без фоновых попыток.
+  retry: (_, _) => null,
 );
+
+/// Строка поиска по каталогу; применяется через 300 мс после последнего ввода.
+final exerciseQueryProvider =
+    NotifierProvider.autoDispose<ExerciseQueryNotifier, String>(
+      ExerciseQueryNotifier.new,
+    );
+
+class ExerciseQueryNotifier extends Notifier<String> {
+  static const debounce = Duration(milliseconds: 300);
+
+  Timer? _timer;
+
+  @override
+  String build() {
+    ref.onDispose(() => _timer?.cancel());
+    return '';
+  }
+
+  void search(String text) {
+    _timer?.cancel();
+    _timer = Timer(debounce, () => state = text.trim().toLowerCase());
+  }
+}
+
+final filteredExercisesProvider =
+    Provider.autoDispose<AsyncValue<List<Exercise>>>((ref) {
+      final query = ref.watch(exerciseQueryProvider);
+      return ref
+          .watch(exercisesProvider)
+          .whenData(
+            (list) => query.isEmpty
+                ? list
+                : [
+                    for (final e in list)
+                      if (e.name.toLowerCase().contains(query) ||
+                          e.muscleGroup.toLowerCase().contains(query))
+                        e,
+                  ],
+          );
+    });
 
 final historyProvider =
     AsyncNotifierProvider<HistoryNotifier, List<ExerciseLog>>(

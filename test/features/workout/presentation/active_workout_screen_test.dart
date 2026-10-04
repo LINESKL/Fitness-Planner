@@ -2,6 +2,7 @@ import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/presentation/active_workout_screen.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_workout_repository.dart';
+import 'package:fitness_planner/features/workout/data/local_exercise_repository.dart';
 import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,9 @@ void main() {
       overrides: [
         workoutRepositoryProvider.overrideWithValue(
           InMemoryWorkoutRepository(history),
+        ),
+        exerciseRepositoryProvider.overrideWithValue(
+          const LocalExerciseRepository(),
         ),
       ],
     );

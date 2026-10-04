@@ -1,11 +1,22 @@
 import 'package:fitness_planner/app.dart';
 import 'package:fitness_planner/core/format.dart';
+import 'package:fitness_planner/features/workout/data/local_exercise_repository.dart';
+import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Future<void> pumpApp(WidgetTester tester) async {
-  await tester.pumpWidget(const ProviderScope(child: FitnessPlannerApp()));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        exerciseRepositoryProvider.overrideWithValue(
+          const LocalExerciseRepository(),
+        ),
+      ],
+      child: const FitnessPlannerApp(),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
