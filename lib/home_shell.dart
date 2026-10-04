@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/exercises/presentation/exercises_screen.dart';
 import 'features/history/presentation/history_screen.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/settings/presentation/settings_screen.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
 import 'features/workout/presentation/workout_providers.dart';
 
@@ -30,7 +31,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
+      appBar: AppBar(
+        title: Text(_titles[_index]),
+        actions: [
+          IconButton(
+            tooltip: 'Настройки',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+        ],
+      ),
       body: switch (_index) {
         0 => HomeScreen(onStartWorkout: _startWorkout),
         1 => const HistoryScreen(),

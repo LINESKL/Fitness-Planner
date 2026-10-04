@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' show ReadContext;
 
+import '../../../core/format.dart';
 import '../../exercises/presentation/exercises_screen.dart';
+import '../../settings/presentation/settings_model.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/set_entry.dart';
@@ -29,6 +32,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
 
   Future<void> _finish(BuildContext context, WidgetRef ref) async {
     final navigator = Navigator.of(context);
+    ref.read(restTimerProvider.notifier).skip();
     await ref.read(activeWorkoutProvider.notifier).finish();
     navigator.pop();
   }
@@ -51,6 +55,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const _RestTimerBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -64,7 +69,19 @@ class ActiveWorkoutScreen extends ConsumerWidget {
                         const <SetEntry>[])
                   if (!s.isWarmup) s,
               ],
-              onToggle: (j) => notifier.update((w) => w.toggleDone(i, j)),
+              onToggle: (j) {
+                final becomesDone = !exercise.sets[j].done;
+                notifier.update((w) => w.toggleDone(i, j));
+                if (becomesDone) {
+                  ref
+                      .read(restTimerProvider.notifier)
+                      .start(
+                        Duration(
+                          seconds: context.read<SettingsModel>().restSeconds,
+                        ),
+                      );
+                }
+              },
               onWeight: (j, v) =>
                   notifier.update((w) => w.updateSet(i, j, weight: v)),
               onReps: (j, v) =>
@@ -86,6 +103,44 @@ class ActiveWorkoutScreen extends ConsumerWidget {
             label: const Text('Добавить упражнение'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RestTimerBar extends ConsumerWidget {
+  const _RestTimerBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final left = ref.watch(restTimerProvider);
+    if (left == null) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.tertiaryContainer,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+          child: Row(
+            children: [
+              Icon(Icons.timer_outlined, color: scheme.onTertiaryContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Отдых ${formatDuration(left)}',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(color: scheme.onTertiaryContainer),
+                ),
+              ),
+              TextButton(
+                onPressed: ref.read(restTimerProvider.notifier).skip,
+                child: const Text('Пропустить'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

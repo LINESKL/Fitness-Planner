@@ -10,6 +10,7 @@ import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/exercise_repository.dart';
 import '../domain/workout_repository.dart';
+import '../domain/workout_async.dart';
 
 // DI: реализации подставляются здесь, в тестах — через overrides.
 final workoutRepositoryProvider = Provider<WorkoutRepository>(
@@ -130,5 +131,37 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
     await ref
         .read(historyProvider.notifier)
         .add(current.toLogs(now ?? DateTime.now()));
+  }
+}
+
+/// Сколько осталось отдыхать; null — таймер не идёт.
+final restTimerProvider = NotifierProvider<RestTimerNotifier, Duration?>(
+  RestTimerNotifier.new,
+);
+
+class RestTimerNotifier extends Notifier<Duration?> {
+  StreamSubscription<Duration>? _subscription;
+
+  @override
+  Duration? build() {
+    ref.onDispose(() => _subscription?.cancel());
+    return null;
+  }
+
+  /// Перезапускает отсчёт; нулевая длительность — таймер выключен.
+  void start(Duration total) {
+    _subscription?.cancel();
+    if (total <= Duration.zero) {
+      state = null;
+      return;
+    }
+    state = total;
+    _subscription = restTimer(total)
+        .listen((left) => state = left > Duration.zero ? left : null);
+  }
+
+  void skip() {
+    _subscription?.cancel();
+    state = null;
   }
 }

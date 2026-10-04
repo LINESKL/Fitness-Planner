@@ -1,5 +1,6 @@
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
+import 'package:fitness_planner/features/settings/presentation/settings_model.dart';
 import 'package:fitness_planner/features/workout/presentation/active_workout_screen.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_workout_repository.dart';
 import 'package:fitness_planner/features/workout/data/local_exercise_repository.dart';
@@ -7,6 +8,8 @@ import 'package:fitness_planner/features/workout/presentation/workout_providers.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' show ChangeNotifierProvider;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   final history = [
@@ -23,7 +26,9 @@ void main() {
 
   late ProviderContainer container;
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {int restSeconds = 0}) async {
+    SharedPreferences.setMockInitialValues({'rest_seconds': restSeconds});
+    final prefs = await SharedPreferences.getInstance();
     container = ProviderContainer.test(
       overrides: [
         workoutRepositoryProvider.overrideWithValue(
@@ -40,7 +45,10 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: ActiveWorkoutScreen()),
+        child: ChangeNotifierProvider(
+          create: (_) => SettingsModel(prefs),
+          child: const MaterialApp(home: ActiveWorkoutScreen()),
+        ),
       ),
     );
   }
@@ -143,5 +151,31 @@ void main() {
     await scrollTo(tester, 'Приседания');
 
     expect(find.text('Приседания'), findsOneWidget);
+  });
+
+  testWidgets('отметка подхода запускает таймер отдыха', (tester) async {
+    await pump(tester, restSeconds: 2);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    expect(find.text('Отдых 0:02'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Отдых 0:01'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('Отдых'), findsNothing);
+  });
+
+  testWidgets('снятие отметки таймер не запускает', (tester) async {
+    await pump(tester, restSeconds: 2);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.tap(find.text('Пропустить'));
+    await tester.pump();
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+
+    expect(find.textContaining('Отдых'), findsNothing);
   });
 }
