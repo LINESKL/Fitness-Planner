@@ -6,9 +6,10 @@ import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/exercises/presentation/exercise_details_screen.dart';
 import '../features/exercises/presentation/exercises_screen.dart';
-import '../features/history/presentation/history_screen.dart';
-import '../features/history/presentation/workout_details_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/program/presentation/program_screen.dart';
+import '../features/progress/presentation/progress_screen.dart';
+import '../features/progress/presentation/workout_details_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/workout/presentation/active_workout_screen.dart';
 import '../home_shell.dart';
@@ -63,16 +64,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/history',
-                name: 'history',
-                builder: (_, _) => const HistoryScreen(),
+                path: '/program',
+                name: 'program',
+                builder: (_, _) => const ProgramScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/progress',
+                name: 'progress',
+                builder: (_, _) => const ProgressScreen(),
                 routes: [
                   GoRoute(
-                    path: ':day',
+                    path: 'workout/:workoutId',
                     name: 'workoutDetails',
                     parentNavigatorKey: rootKey,
                     builder: (_, state) => WorkoutDetailsScreen(
-                      dayKey: state.pathParameters['day']!,
+                      workoutId: state.pathParameters['workoutId']!,
                     ),
                   ),
                 ],

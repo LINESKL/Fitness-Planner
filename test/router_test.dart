@@ -21,7 +21,7 @@ void main() {
   testWidgets('прямой переход без входа уводит на вход', (tester) async {
     await pumpApp(tester, signedIn: false);
 
-    routerOf(tester).go('/history');
+    routerOf(tester).go('/progress');
     await tester.pumpAndSettle();
 
     expect(find.text('Продолжить как гость'), findsOneWidget);
@@ -39,7 +39,7 @@ void main() {
 
   testWidgets('тренировка из истории открывается с подходами', (tester) async {
     await pumpApp(tester);
-    await tester.tap(navItem('История'));
+    await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('30.09.2026'));
     await tester.pumpAndSettle();
@@ -48,10 +48,12 @@ void main() {
     expect(find.text('100 кг × 5'), findsNWidgets(3));
   });
 
-  testWidgets('несуществующий день — «Тренировка не найдена»', (tester) async {
+  testWidgets('неизвестная тренировка — «Тренировка не найдена»', (
+    tester,
+  ) async {
     await pumpApp(tester);
 
-    routerOf(tester).go('/history/2020-01-01');
+    routerOf(tester).go('/progress/workout/nope');
     await tester.pumpAndSettle();
 
     expect(find.text('Тренировка не найдена'), findsOneWidget);
@@ -72,7 +74,7 @@ void main() {
 
   testWidgets('вкладка сохраняет экран при переключении', (tester) async {
     await pumpApp(tester);
-    await tester.tap(navItem('История'));
+    await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('30.09.2026'));
     await tester.pumpAndSettle();
@@ -80,6 +82,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('30.09.2026'), findsOneWidget);
+  });
+
+  testWidgets('четыре вкладки, программа открывается', (tester) async {
+    await pumpApp(tester);
+
+    for (final tab in ['Сегодня', 'Программа', 'Прогресс', 'Упражнения']) {
+      expect(navItem(tab), findsOneWidget, reason: tab);
+    }
+    await tester.tap(navItem('Программа'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(AppBar, 'Программа'), findsOneWidget);
   });
 
   group('адаптивность', () {
@@ -98,7 +111,7 @@ void main() {
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
 
-      await tester.tap(navItem('История'));
+      await tester.tap(navItem('Прогресс'));
       await tester.pumpAndSettle();
       expect(find.text('30.09.2026'), findsOneWidget);
     });

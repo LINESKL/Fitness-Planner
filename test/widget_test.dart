@@ -22,9 +22,9 @@ void main() {
     expect(app.darkTheme?.brightness, Brightness.dark);
   });
 
-  testWidgets('вкладка История показывает тренировки по дням', (tester) async {
+  testWidgets('вкладка Прогресс показывает тренировки', (tester) async {
     await pumpApp(tester);
-    await tester.tap(navItem('История'));
+    await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
 
     expect(find.text('30.09.2026'), findsOneWidget);
@@ -56,7 +56,7 @@ void main() {
     await tester.tap(find.byType(Checkbox).first);
     await tester.tap(find.text('Завершить'));
     await tester.pumpAndSettle();
-    await tester.tap(navItem('История'));
+    await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
 
     expect(find.text(formatDate(DateTime.now())), findsOneWidget);

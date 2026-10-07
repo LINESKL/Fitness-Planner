@@ -10,8 +10,17 @@ class HomeShell extends StatelessWidget {
   final StatefulNavigationShell shell;
 
   static const _tabs = [
-    (icon: Icons.home_outlined, selected: Icons.home, label: 'Главная'),
-    (icon: Icons.history, selected: Icons.history, label: 'История'),
+    (icon: Icons.today_outlined, selected: Icons.today, label: 'Сегодня'),
+    (
+      icon: Icons.view_list_outlined,
+      selected: Icons.view_list,
+      label: 'Программа',
+    ),
+    (
+      icon: Icons.insights_outlined,
+      selected: Icons.insights,
+      label: 'Прогресс',
+    ),
     (
       icon: Icons.fitness_center,
       selected: Icons.fitness_center,
