@@ -9,10 +9,10 @@ void main() {
     return SettingsModel(await SharedPreferences.getInstance());
   }
 
-  test('по умолчанию — системная тема и отдых 90 с', () async {
+  test('по умолчанию — тёмная тема и отдых 90 с', () async {
     final settings = await model();
 
-    expect(settings.themeMode, ThemeMode.system);
+    expect(settings.themeMode, ThemeMode.dark);
     expect(settings.restSeconds, 90);
   });
 
@@ -21,10 +21,10 @@ void main() {
     var notified = 0;
     settings.addListener(() => notified++);
 
-    await settings.setThemeMode(ThemeMode.dark);
+    await settings.setThemeMode(ThemeMode.light);
 
     final restarted = SettingsModel(await SharedPreferences.getInstance());
-    expect(restarted.themeMode, ThemeMode.dark);
+    expect(restarted.themeMode, ThemeMode.light);
     expect(notified, 1);
   });
 
@@ -39,6 +39,6 @@ void main() {
   test('мусор в настройках — значения по умолчанию', () async {
     final settings = await model({'theme_mode': 'neon'});
 
-    expect(settings.themeMode, ThemeMode.system);
+    expect(settings.themeMode, ThemeMode.dark);
   });
 }

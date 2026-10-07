@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format.dart';
+import '../../../core/theme.dart';
 import '../../../core/widgets/max_width.dart';
 import '../../../core/widgets/message_view.dart';
 import '../../workout/domain/exercise_log.dart';
 import '../../workout/domain/set_entry.dart';
+import '../../workout/domain/stats.dart';
 import '../../workout/presentation/workout_providers.dart';
 
 /// Тренировка одного дня; [dayKey] — «2026-09-30».
@@ -35,12 +37,16 @@ class WorkoutDetailsScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  Text('ОБЪЁМ', style: text.labelSmall),
                   Text(
-                    'Объём: ${formatWeight(totalVolume(logs.expand((l) => l.sets)))} кг',
-                    style: text.titleMedium,
+                    formatTonnage(totalVolume(logs.expand((l) => l.sets))),
+                    style: text.headlineMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontFeatures: tabularFigures,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  for (final log in logs)
+                  const SizedBox(height: 12),
+                  for (final log in logs) ...[
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -53,11 +59,16 @@ class WorkoutDetailsScreen extends ConsumerWidget {
                               Text(
                                 '${formatWeight(set.weight)} кг × ${set.reps}'
                                 '${set.isWarmup ? ' (разминка)' : ''}',
+                                style: const TextStyle(
+                                  fontFeatures: tabularFigures,
+                                ),
                               ),
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 10),
+                  ],
                 ],
               ),
             ),

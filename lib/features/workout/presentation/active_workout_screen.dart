@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' show ReadContext;
 
 import '../../../core/format.dart';
+import '../../../core/theme.dart';
 import '../../exercises/presentation/exercises_screen.dart';
 import '../../settings/presentation/settings_model.dart';
 import '../domain/active_workout.dart';
@@ -125,28 +126,37 @@ class _RestTimerBar extends ConsumerWidget {
     if (left == null) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
 
-    return Material(
-      color: scheme.tertiaryContainer,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-          child: Row(
-            children: [
-              Icon(Icons.timer_outlined, color: scheme.onTertiaryContainer),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Отдых ${formatDuration(left)}',
-                  style: Theme.of(context).textTheme.titleMedium
-                      ?.copyWith(color: scheme.onTertiaryContainer),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Material(
+          color: scheme.primary,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+            child: Row(
+              children: [
+                Icon(Icons.timer_outlined, color: scheme.onPrimary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Отдых ${formatDuration(left)}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: scheme.onPrimary,
+                      fontFeatures: tabularFigures,
+                    ),
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: ref.read(restTimerProvider.notifier).skip,
-                child: const Text('Пропустить'),
-              ),
-            ],
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: scheme.onPrimary,
+                  ),
+                  onPressed: ref.read(restTimerProvider.notifier).skip,
+                  child: const Text('Пропустить'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -182,25 +192,26 @@ class _ExerciseCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 4, 4),
+        padding: const EdgeInsets.fromLTRB(16, 16, 8, 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(exercise.name, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 2),
             Text(
-              exercise.name,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            if (previous.isEmpty) Text('Ещё не делали', style: muted),
-            const SizedBox(height: 8),
-            DefaultTextStyle.merge(
+              previous.isEmpty
+                  ? 'Ещё не делали'
+                  : 'в прошлый раз ${compactSets(previous)}',
               style: muted,
+            ),
+            const SizedBox(height: 12),
+            DefaultTextStyle.merge(
+              style: theme.textTheme.labelSmall,
               child: const _SetRow(
                 number: Text('#'),
-                previous: Text('Прошлый'),
-                weight: Text('кг'),
-                reps: Text('Повт'),
+                previous: Text('ПРОШЛЫЙ'),
+                weight: Center(child: Text('КГ')),
+                reps: Center(child: Text('ПОВТ')),
                 trailing: SizedBox(width: 48),
               ),
             ),
@@ -212,7 +223,7 @@ class _ExerciseCard extends StatelessWidget {
                   j < previous.length
                       ? '${formatWeight(previous[j].weight)} × ${previous[j].reps}'
                       : '—',
-                  style: muted,
+                  style: muted?.copyWith(fontFeatures: tabularFigures),
                 ),
                 weight: _NumberField(
                   initial: set.weight == 0 ? '' : formatWeight(set.weight),
@@ -265,11 +276,12 @@ class _NumberField extends StatelessWidget {
         onChanged: onChanged,
         keyboardType: TextInputType.numberWithOptions(decimal: decimal),
         textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(fontFeatures: tabularFigures),
         decoration: const InputDecoration(
           isDense: true,
           hintText: '0',
-          contentPadding: EdgeInsets.symmetric(vertical: 8),
-          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );
@@ -296,21 +308,22 @@ class _SetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
         color: highlighted
-            ? Theme.of(context).colorScheme.secondaryContainer
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
             : null,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
-      padding: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.fromLTRB(6, 2, 0, 2),
       child: Row(
         children: [
-          SizedBox(width: 28, child: number),
+          SizedBox(width: 26, child: number),
           Expanded(child: previous),
-          SizedBox(width: 64, child: weight),
-          SizedBox(width: 52, child: reps),
+          SizedBox(width: 72, child: weight),
+          SizedBox(width: 58, child: reps),
           trailing,
         ],
       ),
@@ -329,4 +342,13 @@ int? parseRepsInput(String text) {
   if (text.trim().isEmpty) return 0;
   final v = int.tryParse(text.trim());
   return v != null && v >= 0 ? v : null;
+}
+
+/// «80 × 8, 8, 7» при одном весе, иначе «80 × 8, 82.5 × 7».
+String compactSets(List<SetEntry> sets) {
+  if (sets.every((s) => s.weight == sets.first.weight)) {
+    return '${formatWeight(sets.first.weight)} × '
+        '${sets.map((s) => s.reps).join(', ')}';
+  }
+  return sets.map((s) => '${formatWeight(s.weight)} × ${s.reps}').join(', ');
 }

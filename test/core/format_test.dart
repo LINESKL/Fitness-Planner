@@ -31,4 +31,9 @@ void main() {
       ],
     );
   });
+
+  test('длинная дата по-русски', () {
+    expect(formatLongDate(DateTime(2026, 10, 7)), 'среда, 7 октября');
+    expect(formatLongDate(DateTime(2026, 3, 1)), 'воскресенье, 1 марта');
+  });
 }

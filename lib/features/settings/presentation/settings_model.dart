@@ -15,7 +15,7 @@ class SettingsModel extends ChangeNotifier {
 
   ThemeMode get themeMode =>
       ThemeMode.values.asNameMap()[_prefs.getString(_themeKey)] ??
-      ThemeMode.system;
+      ThemeMode.dark;
 
   int get restSeconds => _prefs.getInt(_restKey) ?? 90;
 

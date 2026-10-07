@@ -70,16 +70,14 @@ void main() {
     expect(find.text('Продолжить тренировку'), findsOneWidget);
   });
 
-  testWidgets('тёмная тема из настроек применяется к приложению', (
-    tester,
-  ) async {
+  testWidgets('тема из настроек применяется к приложению', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Тёмная'));
+    await tester.tap(find.text('Светлая'));
     await tester.pumpAndSettle();
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-    expect(app.themeMode, ThemeMode.dark);
+    expect(app.themeMode, ThemeMode.light);
   });
 }

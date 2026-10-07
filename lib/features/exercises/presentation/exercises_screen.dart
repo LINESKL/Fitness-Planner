@@ -73,13 +73,12 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: TextField(
             onChanged: _search,
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.search),
-              hintText: 'Поиск по названию или группе мышц',
-              border: OutlineInputBorder(),
+              hintText: 'Название или группа мышц',
             ),
           ),
         ),
@@ -135,7 +134,10 @@ class _ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final letter = CircleAvatar(
+      backgroundColor: scheme.surfaceContainerHigh,
+      foregroundColor: scheme.primary,
       child: Text(exercise.name.characters.firstOrNull ?? '?'),
     );
     final url = exercise.imageUrl;
@@ -148,12 +150,17 @@ class _ExerciseTile extends StatelessWidget {
                 url,
                 width: 40,
                 height: 40,
+                cacheWidth: 120,
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => letter,
               ),
             ),
       title: Text(exercise.name),
-      subtitle: Text(exercise.muscleGroup),
+      subtitle: Text(
+        exercise.muscleGroup,
+        style: TextStyle(color: scheme.onSurfaceVariant),
+      ),
+      trailing: onTap == null ? null : const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
