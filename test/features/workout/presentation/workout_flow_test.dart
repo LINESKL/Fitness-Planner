@@ -190,10 +190,22 @@ void main() {
     expect(find.textContaining('подход 4 из 4'), findsOneWidget);
   });
 
-  testWidgets('«Завершить» в шапке сохраняет только сделанное', (tester) async {
+  testWidgets('«Завершить» в шапке спрашивает и сохраняет только сделанное', (
+    tester,
+  ) async {
     await startUpperDay(tester);
     await done(tester);
     await tester.tap(find.text('Завершить'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Не сделано подходов: 5'), findsOneWidget);
+    await tester.tap(find.text('Продолжить'));
+    await tester.pumpAndSettle();
+    expect(containerOf(tester).read(activeWorkoutProvider), isNotNull);
+
+    await tester.tap(find.text('Завершить'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Завершить'));
     await tester.pumpAndSettle();
 
     final saved = (await containerOf(tester).read(workoutsProvider.future))

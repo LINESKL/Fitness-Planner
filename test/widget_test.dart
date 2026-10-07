@@ -56,6 +56,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Завершить'));
     await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Завершить'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Готово'));
     await tester.pumpAndSettle();
     await tester.tap(navItem('Прогресс'));

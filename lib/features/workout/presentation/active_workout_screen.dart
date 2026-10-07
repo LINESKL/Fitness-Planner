@@ -36,6 +36,37 @@ class ActiveWorkoutScreen extends ConsumerWidget {
     }
   }
 
+  /// «Завершить» из шапки: если остались подходы — переспросить.
+  Future<void> _confirmFinish(BuildContext context, WidgetRef ref) async {
+    final workout = ref.read(activeWorkoutProvider);
+    final left = workout == null
+        ? 0
+        : workout.exercises.expand((e) => e.sets).where((s) => !s.done).length;
+    if (left > 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Завершить тренировку?'),
+          content: Text(
+            'Не сделано подходов: $left\nСохранятся только выполненные.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Продолжить'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Завершить'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
+    await _finish(context, ref);
+  }
+
   Future<void> _finish(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -87,7 +118,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
             onPressed: () => context.pushNamed('workoutPlan'),
           ),
           TextButton(
-            onPressed: () => _finish(context, ref),
+            onPressed: () => _confirmFinish(context, ref),
             child: const Text('Завершить'),
           ),
         ],
