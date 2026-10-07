@@ -27,8 +27,8 @@ void main() {
     await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
 
-    expect(find.text('30.09.2026'), findsOneWidget);
-    expect(find.text('20.09.2026'), findsOneWidget);
+    expect(await scrollToText(tester, '30.09.2026'), findsOneWidget);
+    expect(await scrollToText(tester, '20.09.2026'), findsOneWidget);
   });
 
   testWidgets('вкладка Упражнения показывает каталог', (tester) async {
@@ -63,7 +63,10 @@ void main() {
     await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
 
-    expect(find.text(formatDate(DateTime.now())), findsOneWidget);
+    expect(
+      await scrollToText(tester, formatDate(DateTime.now())),
+      findsOneWidget,
+    );
   });
 
   testWidgets('после выхода назад тренировку можно продолжить', (tester) async {

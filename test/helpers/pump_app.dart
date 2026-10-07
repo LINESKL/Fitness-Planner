@@ -85,3 +85,14 @@ Finder navItem(String label) => find.descendant(
   of: find.byWidgetPredicate((w) => w is NavigationBar || w is NavigationRail),
   matching: find.text(label),
 );
+
+/// Докрутить первый видимый список до элемента с текстом и вернуть его.
+Future<Finder> scrollToText(WidgetTester tester, String text) async {
+  final finder = find.textContaining(text);
+  await tester.dragUntilVisible(
+    finder,
+    find.byType(ListView).first,
+    const Offset(0, -200),
+  );
+  return finder;
+}

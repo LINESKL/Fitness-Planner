@@ -41,7 +41,7 @@ void main() {
     await pumpApp(tester);
     await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('30.09.2026'));
+    await tester.tap(await scrollToText(tester, '30.09.2026'));
     await tester.pumpAndSettle();
 
     expect(find.text('Приседания'), findsOneWidget);
@@ -76,12 +76,12 @@ void main() {
     await pumpApp(tester);
     await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('30.09.2026'));
+    await tester.tap(await scrollToText(tester, '30.09.2026'));
     await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    expect(find.text('30.09.2026'), findsOneWidget);
+    expect(find.textContaining('30.09.2026'), findsOneWidget);
   });
 
   testWidgets('четыре вкладки, программа открывается', (tester) async {
@@ -113,7 +113,7 @@ void main() {
 
       await tester.tap(navItem('Прогресс'));
       await tester.pumpAndSettle();
-      expect(find.text('30.09.2026'), findsOneWidget);
+      expect(find.byType(TabBar), findsOneWidget);
     });
   });
 }

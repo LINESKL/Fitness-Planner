@@ -56,11 +56,12 @@ Future<InMemoryBodyRepository> openProgress(
 }
 
 /// Обзор длинный: карточки ниже календаря нужно докрутить.
-Future<void> scrollTo(WidgetTester tester, Finder finder) => tester.dragUntilVisible(
-  finder,
-  find.byType(ListView).first,
-  const Offset(0, -200),
-);
+Future<void> scrollTo(WidgetTester tester, Finder finder) =>
+    tester.dragUntilVisible(
+      finder,
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
 
 ProviderContainer containerOf(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
