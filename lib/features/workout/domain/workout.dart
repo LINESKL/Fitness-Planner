@@ -40,3 +40,17 @@ class Workout {
   int get workingSets =>
       entries.expand((e) => e.sets).where((s) => !s.isWarmup).length;
 }
+
+/// Плоские логи старого формата → тренировки по календарным дням.
+List<Workout> workoutsFromLogs(Iterable<ExerciseLog> logs) => [
+  for (final day in workoutsByDay(logs))
+    Workout(
+      id: 'legacy-${day.first.date.toIso8601String()}',
+      title: 'Тренировка',
+      startedAt: day.map((l) => l.date).reduce((a, b) => a.isBefore(b) ? a : b),
+      finishedAt: day.map((l) => l.date).reduce((a, b) => a.isAfter(b) ? a : b),
+      entries: [
+        for (final l in day) WorkoutEntry(exercise: l.exercise, sets: l.sets),
+      ],
+    ),
+];

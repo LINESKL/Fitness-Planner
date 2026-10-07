@@ -1,8 +1,9 @@
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
+import 'package:fitness_planner/features/workout/domain/workout.dart';
 import 'package:fitness_planner/features/settings/presentation/settings_model.dart';
 import 'package:fitness_planner/features/workout/presentation/active_workout_screen.dart';
-import 'package:fitness_planner/features/workout/data/in_memory_workout_repository.dart';
+import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
 import 'package:fitness_planner/features/workout/data/local_exercise_repository.dart';
 import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ void main() {
     container = ProviderContainer.test(
       overrides: [
         workoutRepositoryProvider.overrideWithValue(
-          repository ?? InMemoryWorkoutRepository(history),
+          repository ?? InMemoryWorkoutRepository.fromLogs(history),
         ),
         exerciseRepositoryProvider.overrideWithValue(
           const LocalExerciseRepository(),
@@ -218,9 +219,10 @@ void main() {
 }
 
 class FailingWorkoutRepository extends InMemoryWorkoutRepository {
-  FailingWorkoutRepository(super.seed);
+  FailingWorkoutRepository(List<ExerciseLog> logs)
+    : super(workoutsFromLogs(logs));
 
   @override
-  Future<void> addLogs(List<ExerciseLog> logs) async =>
+  Future<void> save(Workout workout) async =>
       throw StateError('диск переполнен');
 }

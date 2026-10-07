@@ -3,19 +3,21 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/in_memory_workout_repository.dart';
+import '../../../core/ids.dart';
+import '../data/in_memory_repositories.dart';
 import '../data/remote_exercise_repository.dart';
 import '../data/sample_data.dart';
 import '../data/wger/wger_api.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/exercise_repository.dart';
-import '../domain/workout_repository.dart';
+import '../domain/repositories.dart';
+import '../domain/workout.dart';
 import '../domain/workout_async.dart';
 
 // DI: реализации подставляются здесь, в тестах — через overrides.
 final workoutRepositoryProvider = Provider<WorkoutRepository>(
-  (ref) => InMemoryWorkoutRepository(sampleHistory),
+  (ref) => InMemoryWorkoutRepository.fromLogs(sampleHistory),
 );
 
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
@@ -28,23 +30,36 @@ final exercisesProvider = FutureProvider<ExerciseCatalog>(
   retry: (_, _) => null,
 );
 
-final historyProvider =
-    AsyncNotifierProvider<HistoryNotifier, List<ExerciseLog>>(
-      HistoryNotifier.new,
-    );
+/// Завершённые тренировки, от старых к новым.
+final workoutsProvider = AsyncNotifierProvider<WorkoutsNotifier, List<Workout>>(
+  WorkoutsNotifier.new,
+);
 
-class HistoryNotifier extends AsyncNotifier<List<ExerciseLog>> {
+class WorkoutsNotifier extends AsyncNotifier<List<Workout>> {
   @override
-  Future<List<ExerciseLog>> build() =>
-      ref.watch(workoutRepositoryProvider).loadHistory();
+  Future<List<Workout>> build() async =>
+      (await ref.watch(workoutRepositoryProvider).all())
+        ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
 
-  Future<void> add(List<ExerciseLog> logs) async {
-    if (logs.isEmpty) return;
-    await ref.read(workoutRepositoryProvider).addLogs(logs);
+  Future<void> save(Workout workout) async {
+    await ref.read(workoutRepositoryProvider).save(workout);
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> delete(String id) async {
+    await ref.read(workoutRepositoryProvider).delete(id);
     ref.invalidateSelf();
     await future;
   }
 }
+
+/// Плоские логи всех тренировок — для функций истории (`lastTime` и др.).
+final historyProvider = FutureProvider<List<ExerciseLog>>(
+  (ref) async => [
+    for (final w in await ref.watch(workoutsProvider.future)) ...w.logs,
+  ],
+);
 
 final activeWorkoutProvider =
     NotifierProvider<ActiveWorkoutNotifier, ActiveWorkout?>(
@@ -86,9 +101,10 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
   Future<void> finish({DateTime? now}) async {
     final current = state;
     if (current == null) return;
-    await ref
-        .read(historyProvider.notifier)
-        .add(current.toLogs(now ?? DateTime.now()));
+    final workout = current.toWorkout(newId(), now ?? DateTime.now());
+    if (workout.entries.isNotEmpty) {
+      await ref.read(workoutsProvider.notifier).save(workout);
+    }
     state = null;
   }
 }

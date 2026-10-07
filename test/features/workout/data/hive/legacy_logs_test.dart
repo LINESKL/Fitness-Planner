@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:fitness_planner/features/workout/data/hive/hive_workout_repository.dart';
+import 'package:fitness_planner/features/workout/data/hive/legacy_logs.dart';
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,16 +29,16 @@ void main() {
   );
 
   test('новая база — пустая история', () async {
-    final repo = await HiveWorkoutRepository.open();
+    final repo = await LegacyLogsBox.open();
 
     expect(await repo.loadHistory(), isEmpty);
   });
 
   test('история переживает перезапуск', () async {
-    await (await HiveWorkoutRepository.open()).addLogs([log]);
+    await (await LegacyLogsBox.open()).addLogs([log]);
     await Hive.close();
 
-    final history = await (await HiveWorkoutRepository.open()).loadHistory();
+    final history = await (await LegacyLogsBox.open()).loadHistory();
 
     final restored = history.single;
     expect(restored.exercise, 'Жим лёжа');
@@ -50,7 +50,7 @@ void main() {
   });
 
   test('целый вес из базы читается как double', () async {
-    final repo = await HiveWorkoutRepository.open();
+    final repo = await LegacyLogsBox.open();
     await repo.addLogs([
       ExerciseLog(
         exercise: 'Присед',

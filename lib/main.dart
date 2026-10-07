@@ -9,7 +9,7 @@ import 'features/auth/data/local_auth_repository.dart';
 import 'features/auth/presentation/auth_providers.dart';
 import 'features/settings/presentation/settings_model.dart';
 import 'features/workout/data/hive/cached_exercise_repository.dart';
-import 'features/workout/data/hive/hive_workout_repository.dart';
+import 'features/workout/data/hive/hive_repositories.dart';
 import 'features/workout/data/remote_exercise_repository.dart';
 import 'features/workout/data/wger/wger_api.dart';
 import 'features/workout/presentation/workout_providers.dart';

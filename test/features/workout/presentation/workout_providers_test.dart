@@ -1,4 +1,4 @@
-import 'package:fitness_planner/features/workout/data/in_memory_workout_repository.dart';
+import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
 import 'package:fitness_planner/features/workout/domain/exercise_log.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
@@ -21,7 +21,7 @@ void main() {
       ProviderContainer.test(
         overrides: [
           workoutRepositoryProvider.overrideWithValue(
-            InMemoryWorkoutRepository(history),
+            InMemoryWorkoutRepository.fromLogs(history),
           ),
         ],
       );
@@ -32,7 +32,9 @@ void main() {
   test('история загружается из репозитория', () async {
     final c = containerWith([bench]);
 
-    expect(await c.read(historyProvider.future), [bench]);
+    final history = await c.read(historyProvider.future);
+    expect(history.single.exercise, 'Жим лёжа');
+    expect(history.single.date, bench.date);
   });
 
   test('start повторяет упражнения последней тренировки', () async {
@@ -83,12 +85,13 @@ void main() {
       await workout(c).start(plan: ['Жим лёжа']);
       workout(c).update((w) => w.toggleDone(0, 0));
 
-      await workout(c).finish(now: DateTime(2026, 10, 4));
+      await workout(c).finish(now: DateTime(2026, 10, 4, 19));
 
       expect(c.read(activeWorkoutProvider), isNull);
-      final history = await c.read(historyProvider.future);
-      expect(history.length, 2);
-      expect(history.last.date, DateTime(2026, 10, 4));
+      final workouts = await c.read(workoutsProvider.future);
+      expect(workouts.length, 2);
+      expect(workouts.last.finishedAt, DateTime(2026, 10, 4, 19));
+      expect(workouts.last.entries.single.exercise, 'Жим лёжа');
     },
   );
 
@@ -98,7 +101,7 @@ void main() {
 
     await workout(c).finish();
 
-    expect(await c.read(historyProvider.future), [bench]);
+    expect((await c.read(workoutsProvider.future)).length, 1);
   });
 
   test('update без тренировки ничего не делает', () {

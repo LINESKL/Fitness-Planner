@@ -2,25 +2,25 @@ import 'package:hive_ce/hive_ce.dart';
 
 import '../../domain/exercise_log.dart';
 import '../../domain/set_entry.dart';
-import '../../domain/workout_repository.dart';
 
-/// История тренировок в Hive: одна запись бокса — одно упражнение тренировки.
-class HiveWorkoutRepository implements WorkoutRepository {
-  HiveWorkoutRepository(this._box);
+/// Старый формат истории (неделя 6): одна запись бокса — одно упражнение.
+/// Нужен только для переноса в новую модель.
+class LegacyLogsBox {
+  LegacyLogsBox(this._box);
 
   static const boxName = 'workouts';
 
-  static Future<HiveWorkoutRepository> open() async =>
-      HiveWorkoutRepository(await Hive.openBox<Map>(boxName));
+  static Future<LegacyLogsBox> open() async =>
+      LegacyLogsBox(await Hive.openBox<Map>(boxName));
+
+  Box<Map> get box => _box;
 
   final Box<Map> _box;
 
-  @override
   Future<List<ExerciseLog>> loadHistory() async => [
     for (final json in _box.values) _fromJson(json),
   ];
 
-  @override
   Future<void> addLogs(List<ExerciseLog> logs) =>
       _box.addAll([for (final log in logs) _toJson(log)]);
 
