@@ -5,8 +5,8 @@ import '../../../core/format.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets/message_view.dart';
 import '../../workout/domain/progress_rules.dart';
-import '../../workout/domain/set_entry.dart';
 import '../../workout/domain/workout.dart';
+import '../../workout/presentation/set_format.dart';
 import '../../workout/presentation/workout_providers.dart';
 import 'progress_screen.dart';
 
@@ -44,7 +44,9 @@ class RecordsTab extends ConsumerWidget {
                       Text(b.exercise, style: theme.textTheme.titleMedium),
                       const SizedBox(height: 2),
                       Text(
-                        '1ПМ ≈ ${formatKg(b.set.oneRepMax)} кг · ${formatDate(b.date)}',
+                        b.set.weight == 0
+                            ? formatDate(b.date)
+                            : '1ПМ ≈ ${formatKg(b.set.oneRepMax)} кг · ${formatDate(b.date)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -53,7 +55,7 @@ class RecordsTab extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${formatWeight(b.set.weight)} × ${b.set.reps}',
+                  formatSet(b.set),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.primary,
                     fontFeatures: tabularFigures,

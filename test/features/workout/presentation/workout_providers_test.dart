@@ -116,4 +116,30 @@ void main() {
 
     expect(c.read(activeWorkoutProvider), isNull);
   });
+
+  test('двойное «Завершить» сохраняет тренировку один раз', () async {
+    final c = containerWith([bench]);
+    await workout(c).start(plan: ['Жим лёжа']);
+    await workout(c).completeCurrent(Duration.zero);
+
+    await Future.wait([workout(c).finish(), workout(c).finish()]);
+
+    expect((await c.read(workoutsProvider.future)).length, 2);
+  });
+
+  test('рекорд объявляется один раз, а не на каждом подходе', () async {
+    final c = containerWith([bench]); // в прошлый раз 80 × 8
+    await workout(c).start(plan: ['Жим лёжа']);
+    workout(c).update((w) => w.addSet(0).addSet(0));
+    for (var i = 0; i < 3; i++) {
+      workout(c).update((w) => w.editSet(0, i, weight: 90, reps: 8));
+    }
+
+    final records = [
+      for (var i = 0; i < 3; i++)
+        await workout(c).completeCurrent(Duration.zero),
+    ];
+
+    expect(records.map((r) => r != null), [true, false, false]);
+  });
 }

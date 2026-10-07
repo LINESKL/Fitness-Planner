@@ -266,4 +266,45 @@ void main() {
       expect(volume.map((p) => p.value), [1280.0, 765.0]);
     });
   });
+
+  group('упражнения со своим весом', () {
+    final history = [
+      workout(DateTime(2026, 9, 1), {
+        'Подтягивания': sets(0, [8, 7]),
+      }, id: 'a'),
+      workout(DateTime(2026, 9, 8), {
+        'Подтягивания': sets(0, [10, 8]),
+      }, id: 'b'),
+    ];
+
+    test('рекорд — больше повторов', () {
+      final before = recordsFor('Подтягивания', history);
+
+      expect(isNewRecord(const SetEntry(weight: 0, reps: 11), before), isTrue);
+      expect(isNewRecord(const SetEntry(weight: 0, reps: 10), before), isFalse);
+    });
+
+    test('лучший подход и история рекордов по повторам', () {
+      final best = personalBests(history).single;
+
+      expect((best.set.reps, best.date), (10, DateTime(2026, 9, 8)));
+      expect(recordHistory(history).single.set.reps, 10);
+    });
+
+    test('подход с отягощением лучше любого без', () {
+      final before = recordsFor('Подтягивания', history);
+
+      expect(isNewRecord(const SetEntry(weight: 5, reps: 3), before), isTrue);
+    });
+
+    test('ряд «повторы» — лучший подход тренировки', () {
+      final series = exerciseSeries(
+        'Подтягивания',
+        history,
+        ExerciseMetric.reps,
+      );
+
+      expect(series.map((p) => p.value), [8.0, 10.0]);
+    });
+  });
 }

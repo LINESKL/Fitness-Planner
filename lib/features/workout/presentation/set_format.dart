@@ -13,3 +13,7 @@ String compactSets(List<SetEntry> sets) {
 /// «82.5 кг» или «свой вес» для упражнений без отягощения.
 String formatLoad(double weight) =>
     weight == 0 ? 'свой вес' : '${formatWeight(weight)} кг';
+
+/// «85 × 6» или «свой вес × 10».
+String formatSet(SetEntry s) =>
+    '${s.weight == 0 ? 'свой вес' : formatWeight(s.weight)} × ${s.reps}';

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/ids.dart';
 import '../data/in_memory_repositories.dart';
 import '../data/remote_exercise_repository.dart';
 import '../data/sample_data.dart';
@@ -195,19 +194,34 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
       type: set.type,
       rpe: set.rpe,
     );
-    final record = isNewRecord(entry, recordsFor(exercise.name, workouts))
+    // Сравниваем и с уже сделанными сегодня подходами: иначе «рекорд» на каждом.
+    final before = recordsFor(exercise.name, [
+      ...workouts,
+      current.toWorkout('current', clock.now()),
+    ]);
+    final record = isNewRecord(entry, before)
         ? (exercise: exercise.name, set: entry, date: current.startedAt)
         : null;
     update((w) => w.completeCurrent(now: clock.now(), rest: rest));
     return record;
   }
 
+  Future<Workout?>? _finishing;
+
   /// Сначала сохраняет, потом закрывает: при ошибке записи тренировка не теряется.
   /// Возвращает сохранённую тренировку или null, если сохранять нечего.
-  Future<Workout?> finish({DateTime? now}) async {
+  /// Повторный вызов во время сохранения ждёт первый, а id из времени начала
+  /// не даёт дубля даже после убийства процесса между записью и очисткой.
+  Future<Workout?> finish({DateTime? now}) =>
+      _finishing ??= _finish(now).whenComplete(() => _finishing = null);
+
+  Future<Workout?> _finish(DateTime? now) async {
     final current = state;
     if (current == null) return null;
-    final workout = current.toWorkout(newId(), now ?? clock.now());
+    final workout = current.toWorkout(
+      'w-${current.startedAt.microsecondsSinceEpoch}',
+      now ?? clock.now(),
+    );
     if (workout.entries.isNotEmpty) {
       await ref.read(workoutsProvider.notifier).save(workout);
     }

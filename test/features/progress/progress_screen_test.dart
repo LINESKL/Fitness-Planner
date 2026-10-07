@@ -188,4 +188,23 @@ void main() {
     await tester.pumpAndSettle();
     expect((await repo.all()).length, 2);
   });
+
+  testWidgets('рекорд упражнения со своим весом — «свой вес × N»', (
+    tester,
+  ) async {
+    await openProgress(
+      tester,
+      workouts: [
+        workout('a', today.subtract(const Duration(days: 7)), {
+          'Подтягивания': sets(0, 1, 8),
+        }),
+        workout('b', today, {'Подтягивания': sets(0, 1, 10)}),
+      ],
+    );
+    await tester.tap(find.text('Рекорды'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('свой вес × 10'), findsOneWidget);
+    expect(find.textContaining('1ПМ'), findsNothing);
+  });
 }

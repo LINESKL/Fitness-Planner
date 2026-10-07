@@ -7,10 +7,10 @@ import '../../../core/theme.dart';
 import '../../../core/widgets/max_width.dart';
 import '../../../core/widgets/message_view.dart';
 import '../domain/progress_rules.dart';
-import '../domain/set_entry.dart';
 import '../domain/stats.dart';
 import '../domain/workout.dart';
 import 'workout_providers.dart';
+import 'set_format.dart';
 
 /// Итоги сразу после «Завершить»: время, объём, рекорды, сравнение с прошлым разом.
 class WorkoutSummaryScreen extends ConsumerWidget {
@@ -106,12 +106,7 @@ class _Summary extends StatelessWidget {
           _Section(
             title: 'НОВЫЕ РЕКОРДЫ',
             rows: [
-              for (final r in records)
-                (
-                  r.exercise,
-                  '${formatWeight(r.set.weight)} × ${r.set.reps}',
-                  true,
-                ),
+              for (final r in records) (r.exercise, formatSet(r.set), true),
             ],
           ),
         ],

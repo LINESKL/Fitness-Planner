@@ -187,8 +187,7 @@ class _SetView extends ConsumerWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Новый рекорд · ${record.exercise} '
-            '${formatWeight(record.set.weight)} × ${record.set.reps}',
+            'Новый рекорд · ${record.exercise} ${formatSet(record.set)}',
           ),
         ),
       );

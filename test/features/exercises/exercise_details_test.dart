@@ -1,3 +1,7 @@
+import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
+import 'package:fitness_planner/features/workout/domain/set_entry.dart';
+import 'package:fitness_planner/features/workout/domain/workout.dart';
+import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,5 +57,40 @@ void main() {
 
     expect(find.text('Ещё не делали'), findsOneWidget);
     expect(find.byType(LineChart), findsNothing);
+  });
+
+  testWidgets('упражнение со своим весом — график повторов', (tester) async {
+    Workout w(String id, int day, int reps) => Workout(
+      id: id,
+      title: 'x',
+      startedAt: DateTime(2026, 9, day),
+      finishedAt: DateTime(2026, 9, day, 1),
+      entries: [
+        WorkoutEntry(
+          exercise: 'Подтягивания',
+          sets: [SetEntry(weight: 0, reps: reps)],
+        ),
+      ],
+    );
+    await pumpApp(
+      tester,
+      overrides: [
+        workoutRepositoryProvider.overrideWithValue(
+          InMemoryWorkoutRepository([w('a', 1, 8), w('b', 8, 10)]),
+        ),
+      ],
+    );
+    await tester.tap(navItem('Упражнения'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Подтягивания'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1ПМ'), findsNothing);
+    final value = tester.widget<Text>(
+      find.byKey(const ValueKey('metric-value')),
+    );
+    expect(value.data, '10 повт.');
+    // Лучший подход и строка в последних тренировках.
+    expect(find.text('свой вес × 10'), findsNWidgets(2));
   });
 }

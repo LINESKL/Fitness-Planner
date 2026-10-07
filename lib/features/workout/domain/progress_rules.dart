@@ -35,12 +35,21 @@ const progressionStep = 2.5;
   );
 }
 
+/// Сила подхода для сравнения рекордов: с отягощением — оценочный 1ПМ,
+/// со своим весом — повторы. Любой подход с отягощением сильнее подхода без.
+double recordScore(SetEntry s) =>
+    s.weight > 0 ? _weightedFloor + s.oneRepMax : s.reps.toDouble();
+
+/// Выше любого реального числа повторов: отделяет подходы с отягощением.
+const _weightedFloor = 10000.0;
+
 /// Личные рекорды по упражнению (без разминки).
 class ExerciseRecords {
   const ExerciseRecords({
     required this.bestWeight,
     required this.bestOneRepMax,
     required this.bestVolume,
+    this.bestScore = 0,
   });
 
   final double bestWeight;
@@ -49,17 +58,21 @@ class ExerciseRecords {
   /// Лучший объём упражнения за одну тренировку.
   final double bestVolume;
 
-  bool get isEmpty => bestOneRepMax <= 0;
+  /// Лучший [recordScore] — по нему определяются новые рекорды.
+  final double bestScore;
+
+  bool get isEmpty => bestScore <= 0;
 }
 
 ExerciseRecords recordsFor(String exercise, List<Workout> workouts) {
-  var weight = 0.0, oneRepMax = 0.0, volume = 0.0;
+  var weight = 0.0, oneRepMax = 0.0, volume = 0.0, score = 0.0;
   for (final w in workouts) {
     for (final e in w.entries.where((e) => e.exercise == exercise)) {
       var sessionVolume = 0.0;
       for (final s in e.sets.where((s) => !s.isWarmup && s.reps > 0)) {
         if (s.weight > weight) weight = s.weight;
         if (s.oneRepMax > oneRepMax) oneRepMax = s.oneRepMax;
+        if (recordScore(s) > score) score = recordScore(s);
         sessionVolume += s.volume;
       }
       if (sessionVolume > volume) volume = sessionVolume;
@@ -69,6 +82,7 @@ ExerciseRecords recordsFor(String exercise, List<Workout> workouts) {
     bestWeight: weight,
     bestOneRepMax: oneRepMax,
     bestVolume: volume,
+    bestScore: score,
   );
 }
 
@@ -78,7 +92,7 @@ bool isNewRecord(SetEntry set, ExerciseRecords before) =>
     !set.isWarmup &&
     set.reps > 0 &&
     !before.isEmpty &&
-    set.oneRepMax > before.bestOneRepMax;
+    recordScore(set) > before.bestScore;
 
 /// Рабочие подходы текущей календарной недели по группам мышц.
 Map<String, int> muscleLoad(
@@ -132,13 +146,15 @@ List<RecordEvent> recordHistory(List<Workout> workouts) {
     for (final e in w.entries) {
       final sets = e.sets.where((s) => !s.isWarmup && s.reps > 0);
       if (sets.isEmpty) continue;
-      final top = sets.reduce((a, b) => a.oneRepMax >= b.oneRepMax ? a : b);
+      final top = sets.reduce(
+        (a, b) => recordScore(a) >= recordScore(b) ? a : b,
+      );
       final previous = best[e.exercise];
-      if (previous != null && top.oneRepMax > previous) {
+      if (previous != null && recordScore(top) > previous) {
         events.add((exercise: e.exercise, set: top, date: w.startedAt));
       }
-      if (previous == null || top.oneRepMax > previous) {
-        best[e.exercise] = top.oneRepMax;
+      if (previous == null || recordScore(top) > previous) {
+        best[e.exercise] = recordScore(top);
       }
     }
   }
@@ -155,7 +171,7 @@ List<RecordEvent> personalBests(List<Workout> workouts) {
     for (final e in w.entries) {
       for (final s in e.sets.where((s) => !s.isWarmup && s.reps > 0)) {
         final current = best[e.exercise];
-        if (current == null || s.oneRepMax > current.set.oneRepMax) {
+        if (current == null || recordScore(s) > recordScore(current.set)) {
           best[e.exercise] = (exercise: e.exercise, set: s, date: w.startedAt);
         }
       }
@@ -164,7 +180,8 @@ List<RecordEvent> personalBests(List<Workout> workouts) {
   return best.values.toList()..sort((a, b) => b.date.compareTo(a.date));
 }
 
-enum ExerciseMetric { oneRepMax, bestWeight, volume }
+/// [reps] — для упражнений со своим весом, где 1ПМ и вес всегда 0.
+enum ExerciseMetric { oneRepMax, bestWeight, volume, reps }
 
 /// Ряд для графика: точка на каждую тренировку с упражнением, по возрастанию даты.
 List<({DateTime date, double value})> exerciseSeries(
@@ -186,6 +203,8 @@ List<({DateTime date, double value})> exerciseSeries(
       ExerciseMetric.bestWeight =>
         sets.map((s) => s.weight).reduce((a, b) => a > b ? a : b),
       ExerciseMetric.volume => totalVolume(sets),
+      ExerciseMetric.reps =>
+        sets.map((s) => s.reps.toDouble()).reduce((a, b) => a > b ? a : b),
     };
     points.add((date: w.startedAt, value: value));
   }

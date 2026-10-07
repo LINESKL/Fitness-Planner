@@ -11,7 +11,6 @@ import '../../../core/widgets/text_input_dialog.dart';
 import '../../progress/presentation/progress_screen.dart' show formatKg;
 import '../../workout/domain/exercise.dart';
 import '../../workout/domain/progress_rules.dart';
-import '../../workout/domain/set_entry.dart';
 import '../../workout/domain/stats.dart';
 import '../../workout/domain/workout.dart';
 import '../../workout/presentation/set_format.dart';
@@ -35,11 +34,14 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
     ExerciseMetric.oneRepMax: '1ПМ',
     ExerciseMetric.bestWeight: 'Лучший вес',
     ExerciseMetric.volume: 'Объём',
+    ExerciseMetric.reps: 'Повторы',
   };
 
-  String _format(double value) => _metric == ExerciseMetric.volume
-      ? formatTonnage(value)
-      : '${formatKg(value)} кг';
+  String _format(ExerciseMetric metric, double value) => switch (metric) {
+    ExerciseMetric.volume => formatTonnage(value),
+    ExerciseMetric.reps => '${value.round()} повт.',
+    _ => '${formatKg(value)} кг',
+  };
 
   Future<void> _delete(Exercise exercise) async {
     final confirmed = await showDialog<bool>(
@@ -129,7 +131,24 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
       color: scheme.onSurfaceVariant,
     );
     final workouts = ref.watch(workoutsProvider).value ?? const <Workout>[];
-    final series = exerciseSeries(exercise.name, workouts, _metric);
+    // Со своим весом 1ПМ, вес и объём всегда 0 — показываем только повторы.
+    final working = [
+      for (final w in workouts)
+        for (final e in w.entries.where((e) => e.exercise == exercise.name))
+          for (final s in e.sets)
+            if (!s.isWarmup) s,
+    ];
+    final bodyweight =
+        working.isNotEmpty && working.every((s) => s.weight == 0);
+    final metrics = bodyweight
+        ? const [ExerciseMetric.reps]
+        : const [
+            ExerciseMetric.oneRepMax,
+            ExerciseMetric.bestWeight,
+            ExerciseMetric.volume,
+          ];
+    final metric = metrics.contains(_metric) ? _metric : metrics.first;
+    final series = exerciseSeries(exercise.name, workouts, metric);
     final best = personalBests(workouts)
         .where((b) => b.exercise == exercise.name)
         .firstOrNull;
@@ -189,17 +208,17 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
                     Wrap(
                       spacing: 8,
                       children: [
-                        for (final m in ExerciseMetric.values)
+                        for (final m in metrics)
                           ChoiceChip(
                             label: Text(_metricNames[m]!),
-                            selected: _metric == m,
+                            selected: metric == m,
                             onSelected: (_) => setState(() => _metric = m),
                           ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      _format(series.last.value),
+                      _format(metric, series.last.value),
                       key: const ValueKey('metric-value'),
                       style: theme.textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w700,
@@ -219,18 +238,19 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
                 Expanded(
                   child: _RecordCard(
                     label: 'ЛУЧШИЙ ПОДХОД',
-                    value:
-                        '${formatWeight(best.set.weight)} × ${best.set.reps}',
+                    value: formatSet(best.set),
                     accent: true,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _RecordCard(
-                    label: 'МАКС. ОБЪЁМ',
-                    value: formatTonnage(records.bestVolume),
+                if (!bodyweight) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _RecordCard(
+                      label: 'МАКС. ОБЪЁМ',
+                      value: formatTonnage(records.bestVolume),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ],

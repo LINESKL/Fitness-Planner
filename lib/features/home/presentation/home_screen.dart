@@ -8,9 +8,9 @@ import '../../program/presentation/program_providers.dart';
 import '../../workout/domain/active_workout.dart';
 import '../../workout/domain/program.dart';
 import '../../workout/domain/progress_rules.dart';
-import '../../workout/domain/set_entry.dart';
 import '../../workout/domain/stats.dart';
 import '../../workout/domain/workout.dart';
+import '../../workout/presentation/set_format.dart';
 import '../../workout/presentation/workout_providers.dart';
 
 /// «Сегодня»: что делать сейчас, неделя и серия, объём и свежий рекорд.
@@ -115,8 +115,7 @@ class HomeScreen extends ConsumerWidget {
                       )
                     : _StatCard(
                         label: 'РЕКОРД',
-                        value:
-                            '${formatWeight(record.set.weight)} × ${record.set.reps}',
+                        value: formatSet(record.set),
                         accent: true,
                         caption: record.exercise,
                       ),
