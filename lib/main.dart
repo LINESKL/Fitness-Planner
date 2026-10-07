@@ -31,6 +31,7 @@ Future<void> main() async {
   final body = await HiveBodyRepository.open();
   final customExercises = await HiveCustomExerciseRepository.open();
   final activeWorkout = await HiveActiveWorkoutStore.open();
+  final restoredWorkout = await activeWorkout.load();
   final exercises = await CachedExerciseRepository.open(
     RemoteExerciseRepository(WgerApi.create()),
   );
@@ -44,6 +45,7 @@ Future<void> main() async {
         bodyRepositoryProvider.overrideWithValue(body),
         customExerciseRepositoryProvider.overrideWithValue(customExercises),
         activeWorkoutStoreProvider.overrideWithValue(activeWorkout),
+        initialActiveWorkoutProvider.overrideWithValue(restoredWorkout),
         exerciseRepositoryProvider.overrideWithValue(exercises),
         authRepositoryProvider.overrideWithValue(LocalAuthRepository(prefs)),
       ],

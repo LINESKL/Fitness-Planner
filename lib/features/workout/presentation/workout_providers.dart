@@ -89,9 +89,16 @@ final activeWorkoutProvider =
       ActiveWorkoutNotifier.new,
     );
 
+/// Идущая тренировка, восстановленная при запуске (main подставляет из хранилища).
+final initialActiveWorkoutProvider = Provider<ActiveWorkout?>((ref) => null);
+
 class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
   @override
-  ActiveWorkout? build() => null;
+  ActiveWorkout? build() {
+    // Каждое изменение сразу в хранилище: тренировка переживает перезапуск.
+    listenSelf((_, next) => ref.read(activeWorkoutStoreProvider).save(next));
+    return ref.read(initialActiveWorkoutProvider);
+  }
 
   /// Без [plan] повторяет упражнения последней тренировки. Идущую не сбрасывает.
   Future<void> start({List<String>? plan, DateTime? now}) async {
