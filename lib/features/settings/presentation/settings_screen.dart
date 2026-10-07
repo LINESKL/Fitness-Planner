@@ -24,6 +24,8 @@ class SettingsScreen extends ConsumerWidget {
             Text('Тема', style: title),
             const SizedBox(height: 8),
             SegmentedButton<ThemeMode>(
+              // Без галочки подписи помещаются в одну строку на узких экранах.
+              showSelectedIcon: false,
               segments: const [
                 ButtonSegment(
                   value: ThemeMode.system,
