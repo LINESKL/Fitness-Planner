@@ -4,7 +4,7 @@ import 'package:provider/provider.dart' show ReadContext;
 
 import '../../../core/format.dart';
 import '../../../core/theme.dart';
-import '../../exercises/presentation/exercises_screen.dart';
+import '../../exercises/presentation/pick_exercise.dart';
 import '../../settings/presentation/settings_model.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
@@ -16,16 +16,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
   const ActiveWorkoutScreen({super.key});
 
   Future<void> _pickExercise(BuildContext context, WidgetRef ref) async {
-    final name = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: const Text('Выбор упражнения')),
-          body: ExercisesScreen(
-            onSelected: (e) => Navigator.of(context).pop(e.name),
-          ),
-        ),
-      ),
-    );
+    final name = await pickExercise(context);
     if (name != null) {
       await ref.read(activeWorkoutProvider.notifier).addExercise(name);
     }
