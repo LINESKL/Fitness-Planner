@@ -5,6 +5,7 @@ import 'package:provider/provider.dart' show WatchContext;
 import '../../../core/format.dart';
 import '../../../core/widgets/max_width.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../program/presentation/program_providers.dart';
 import '../../workout/data/demo_data.dart';
 import '../../workout/presentation/workout_providers.dart';
 import 'settings_model.dart';
@@ -42,7 +43,10 @@ class SettingsScreen extends ConsumerWidget {
       ref.read(bodyRepositoryProvider),
       DateTime.now(),
     );
-    ref.invalidate(workoutsProvider);
+    ref
+      ..invalidate(workoutsProvider)
+      ..invalidate(templatesProvider)
+      ..invalidate(programProvider);
     messenger.showSnackBar(const SnackBar(content: Text('Пример загружен')));
   }
 

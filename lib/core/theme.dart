@@ -101,16 +101,17 @@ ThemeData _theme(ColorScheme scheme) {
         borderRadius: BorderRadius.all(Radius.circular(18)),
       ),
     ),
+    // Высота 52, ширина по содержимому: во всю ширину кнопки растягивает раскладка.
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: const Size(64, 52),
         shape: const RoundedRectangleBorder(borderRadius: radius),
         textStyle: buttonText,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: const Size(64, 52),
         shape: const RoundedRectangleBorder(borderRadius: radius),
         side: BorderSide(color: scheme.outline),
         textStyle: buttonText,

@@ -85,7 +85,7 @@ void main() {
   testWidgets('«Загрузить пример» добавляет программу и историю', (
     tester,
   ) async {
-    await pumpApp(tester);
+    await pumpApp(tester, templates: const []);
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Загрузить пример'));
@@ -101,5 +101,10 @@ void main() {
     expect(workouts.length, greaterThan(10));
     expect(program.templateIds.length, 3);
     expect(find.text('Пример загружен'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Создайте программу'), findsNothing);
+    expect(find.textContaining('ПО ПЛАНУ'), findsOneWidget);
   });
 }

@@ -208,10 +208,13 @@ class _PlanCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(action),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(action),
+              ),
             ),
             if (secondary != null)
               Center(
