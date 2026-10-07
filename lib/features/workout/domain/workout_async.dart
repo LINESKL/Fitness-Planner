@@ -26,3 +26,11 @@ Stream<Duration> restTimer(
   final count = total.inMicroseconds ~/ tick.inMicroseconds;
   return Stream.periodic(tick, (i) => total - tick * (i + 1)).take(count);
 }
+
+/// Сколько осталось отдыхать к моменту [now], с округлением вверх до секунды;
+/// null — отдых закончился. Считается от часов, поэтому верно и после сворачивания.
+Duration? restLeft(DateTime endsAt, DateTime now) {
+  final left = endsAt.difference(now);
+  if (left <= Duration.zero) return null;
+  return Duration(seconds: (left.inMilliseconds / 1000).ceil());
+}

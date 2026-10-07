@@ -53,4 +53,27 @@ void main() {
       ]);
     });
   });
+
+  group('restLeft', () {
+    final end = DateTime(2026, 10, 7, 18, 2);
+
+    test('оставшееся время округляется вверх до секунды', () {
+      expect(
+        restLeft(end, DateTime(2026, 10, 7, 18, 0, 30, 500)),
+        const Duration(seconds: 90),
+      );
+    });
+
+    test('после «сворачивания» время считается от часов, а не от тиков', () {
+      expect(
+        restLeft(end, DateTime(2026, 10, 7, 18, 1, 50)),
+        const Duration(seconds: 10),
+      );
+    });
+
+    test('время вышло — null', () {
+      expect(restLeft(end, end), isNull);
+      expect(restLeft(end, end.add(const Duration(minutes: 5))), isNull);
+    });
+  });
 }

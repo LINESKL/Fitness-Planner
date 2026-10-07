@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/in_memory_workout_repository.dart';
@@ -121,5 +122,28 @@ class RestTimerNotifier extends Notifier<Duration?> {
   void skip() {
     _subscription?.cancel();
     state = null;
+  }
+}
+
+/// Оставшийся отдых идущей тренировки; null — отдыха нет.
+/// Тикает раз в секунду от `restEndsAt`, а не считает тики.
+final restLeftProvider = NotifierProvider<RestLeftNotifier, Duration?>(
+  RestLeftNotifier.new,
+);
+
+class RestLeftNotifier extends Notifier<Duration?> {
+  @override
+  Duration? build() {
+    final endsAt = ref.watch(
+      activeWorkoutProvider.select((w) => w?.restEndsAt),
+    );
+    if (endsAt == null) return null;
+
+    final timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      state = restLeft(endsAt, clock.now());
+      if (state == null) timer.cancel();
+    });
+    ref.onDispose(timer.cancel);
+    return restLeft(endsAt, clock.now());
   }
 }
