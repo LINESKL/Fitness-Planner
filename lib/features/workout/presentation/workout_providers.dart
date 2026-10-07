@@ -206,6 +206,9 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
     return record;
   }
 
+  /// Отменить без сохранения.
+  void cancel() => state = null;
+
   Future<Workout?>? _finishing;
 
   /// Сначала сохраняет, потом закрывает: при ошибке записи тренировка не теряется.

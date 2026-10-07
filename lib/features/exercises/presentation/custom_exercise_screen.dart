@@ -39,6 +39,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
   late final _name = TextEditingController(text: _original?.name ?? '');
   late String _group = _original?.muscleGroup ?? 'Другое';
   String? _error;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -47,6 +48,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
     final taken = (ref.read(exercisesProvider).value?.items ?? const [])
         .where((e) => e.id != _original?.id)
@@ -59,6 +61,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
           : null,
     );
     if (_error != null) return;
+    setState(() => _saving = true);
 
     final exercise = Exercise(
       id: _original?.id ?? 'custom-${newId()}',
@@ -74,7 +77,12 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_original == null ? 'Новое упражнение' : 'Упражнение'),
-        actions: [TextButton(onPressed: _save, child: const Text('Сохранить'))],
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: const Text('Сохранить'),
+          ),
+        ],
       ),
       body: MaxWidth(
         child: ListView(

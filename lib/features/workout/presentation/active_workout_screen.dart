@@ -67,6 +67,33 @@ class ActiveWorkoutScreen extends ConsumerWidget {
     await _finish(context, ref);
   }
 
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Отменить тренировку?'),
+        content: const Text('Сделанные подходы не сохранятся.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Продолжить'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Отменить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    ref.read(activeWorkoutProvider.notifier).cancel();
+    context.goNamed('home');
+  }
+
   Future<void> _finish(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -102,7 +129,12 @@ class ActiveWorkoutScreen extends ConsumerWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(workout.title, style: const TextStyle(fontSize: 20)),
+            Text(
+              workout.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 20),
+            ),
             ElapsedText(
               since: workout.startedAt,
               suffix: exerciseCount == 0
@@ -120,6 +152,15 @@ class ActiveWorkoutScreen extends ConsumerWidget {
           TextButton(
             onPressed: () => _confirmFinish(context, ref),
             child: const Text('Завершить'),
+          ),
+          PopupMenuButton<void>(
+            tooltip: 'Ещё',
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                onTap: () => _cancel(context, ref),
+                child: const Text('Отменить тренировку'),
+              ),
+            ],
           ),
         ],
       ),
@@ -450,77 +491,90 @@ class _RestView extends ConsumerWidget {
     final next = workout.currentSet;
     final exercise = workout.currentExercise;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Spacer(),
-          Text(
-            'ОТДЫХ',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.labelSmall,
+    // В альбомной ориентации и с крупным шрифтом экран прокручивается.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: (constraints.maxHeight - 32).clamp(0, double.infinity),
           ),
-          Text(
-            formatDuration(left),
-            textAlign: TextAlign.center,
-            style: theme.textTheme.displayLarge?.copyWith(
-              fontSize: 80,
-              fontWeight: FontWeight.w800,
-              color: theme.colorScheme.primary,
-              fontFeatures: tabularFigures,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ActionChip(
-                label: const Text('−15 с'),
-                onPressed: () => notifier.update(
-                  (w) => w.extendRest(const Duration(seconds: -15)),
+          child: IntrinsicHeight(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                Text(
+                  'ОТДЫХ',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall,
                 ),
-              ),
-              const SizedBox(width: 12),
-              ActionChip(
-                label: const Text('+15 с'),
-                onPressed: () => notifier.update(
-                  (w) => w.extendRest(const Duration(seconds: 15)),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          if (next != null && exercise != null)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('СЛЕДУЮЩИЙ', style: theme.textTheme.labelSmall),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${exercise.name} · подход ${workout.cursor.set + 1}',
-                      style: theme.textTheme.titleMedium,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    formatDuration(left),
+                    style: theme.textTheme.displayLarge?.copyWith(
+                      fontSize: 80,
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                      fontFeatures: tabularFigures,
                     ),
-                    Text(
-                      '${formatLoad(next.weight)} × ${next.reps}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontFeatures: tabularFigures,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  children: [
+                    ActionChip(
+                      label: const Text('−15 с'),
+                      onPressed: () => notifier.update(
+                        (w) => w.extendRest(const Duration(seconds: -15)),
+                      ),
+                    ),
+                    ActionChip(
+                      label: const Text('+15 с'),
+                      onPressed: () => notifier.update(
+                        (w) => w.extendRest(const Duration(seconds: 15)),
                       ),
                     ),
                   ],
                 ),
-              ),
+                const Spacer(),
+                const SizedBox(height: 16),
+                if (next != null && exercise != null)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('СЛЕДУЮЩИЙ', style: theme.textTheme.labelSmall),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${exercise.name} · подход ${workout.cursor.set + 1}',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          Text(
+                            '${formatLoad(next.weight)} × ${next.reps}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontFeatures: tabularFigures,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => notifier.update((w) => w.skipRest()),
+                  child: const Text('Пропустить отдых'),
+                ),
+              ],
             ),
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: () => notifier.update((w) => w.skipRest()),
-            child: const Text('Пропустить отдых'),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -535,40 +589,42 @@ class _FinishedView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workout = ref.watch(activeWorkoutProvider)!;
     final last = workout.exercises.length - 1;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Icon(
-            Icons.check_circle,
-            size: 72,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Все подходы сделаны',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: onFinish,
-            child: const Text('Завершить тренировку'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: () => ref
-                .read(activeWorkoutProvider.notifier)
-                .update((w) => w.addSet(last)),
-            child: const Text('Ещё подход'),
-          ),
-          TextButton(
-            onPressed: () => ActiveWorkoutScreen.addExercise(context, ref),
-            child: const Text('Добавить упражнение'),
-          ),
-        ],
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Icon(
+              Icons.check_circle,
+              size: 72,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Все подходы сделаны',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: onFinish,
+              child: const Text('Завершить тренировку'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () => ref
+                  .read(activeWorkoutProvider.notifier)
+                  .update((w) => w.addSet(last)),
+              child: const Text('Ещё подход'),
+            ),
+            TextButton(
+              onPressed: () => ActiveWorkoutScreen.addExercise(context, ref),
+              child: const Text('Добавить упражнение'),
+            ),
+          ],
+        ),
       ),
     );
   }

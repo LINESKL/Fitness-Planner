@@ -37,6 +37,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   late final _name = TextEditingController(text: _original?.name ?? '');
   late final _exercises = [...?_original?.exercises];
   String? _nameError;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -70,11 +71,13 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
     if (name.isEmpty) {
       setState(() => _nameError = 'Введите название');
       return;
     }
+    setState(() => _saving = true);
     final template = WorkoutTemplate(
       id: _original?.id ?? newId(),
       name: name,
@@ -141,7 +144,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isNew ? 'Новый день' : 'Изменить день'),
+        title: Text(_isNew ? 'Новый день' : 'День'),
         actions: [
           if (!_isNew)
             IconButton(
@@ -149,7 +152,10 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
               icon: const Icon(Icons.delete_outline),
               onPressed: _delete,
             ),
-          TextButton(onPressed: _save, child: const Text('Сохранить')),
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: const Text('Сохранить'),
+          ),
         ],
       ),
       body: MaxWidth(

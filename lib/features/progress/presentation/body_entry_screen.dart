@@ -22,6 +22,7 @@ class _BodyEntryScreenState extends ConsumerState<BodyEntryScreen> {
   String? _weightError;
   String? _waistError;
   String? _chestError;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -39,6 +40,7 @@ class _BodyEntryScreenState extends ConsumerState<BodyEntryScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final weight = _parse(_weight.text);
     final waist = _parse(_waist.text);
     final chest = _parse(_chest.text);
@@ -54,6 +56,7 @@ class _BodyEntryScreenState extends ConsumerState<BodyEntryScreen> {
     if (_weightError != null || _waistError != null || _chestError != null) {
       return;
     }
+    setState(() => _saving = true);
     await ref
         .read(bodyEntriesProvider.notifier)
         .save(
@@ -85,7 +88,12 @@ class _BodyEntryScreenState extends ConsumerState<BodyEntryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Новый замер'),
-        actions: [TextButton(onPressed: _save, child: const Text('Сохранить'))],
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _save,
+            child: const Text('Сохранить'),
+          ),
+        ],
       ),
       body: MaxWidth(
         child: ListView(

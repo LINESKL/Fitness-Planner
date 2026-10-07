@@ -103,4 +103,18 @@ void main() {
     expect((await c.read(programProvider.future)).templateIds, ['t-up']);
     expect(find.text('Низ'), findsNothing);
   });
+
+  testWidgets('двойное «Сохранить» создаёт один день', (tester) async {
+    await openProgram(tester);
+    await tester.tap(find.text('Новый день'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Плечи');
+    await tester.tap(find.text('Сохранить'));
+    await tester.tap(find.text('Сохранить'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    final c = containerOf(tester);
+    expect((await c.read(templatesProvider.future)).length, 3);
+    expect((await c.read(programProvider.future)).templateIds.length, 3);
+  });
 }
