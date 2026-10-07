@@ -15,6 +15,7 @@ import '../domain/exercise_log.dart';
 import '../domain/progress_rules.dart';
 import '../domain/set_entry.dart';
 import 'elapsed_text.dart';
+import 'set_format.dart';
 import 'workout_providers.dart';
 
 const setTypeNames = {
@@ -75,7 +76,7 @@ class ActiveWorkoutScreen extends ConsumerWidget {
               since: workout.startedAt,
               suffix: exerciseCount == 0
                   ? ''
-                  : ' · упражнение ${workout.cursor.exercise + 1} из $exerciseCount',
+                  : ' · ${workout.cursor.exercise + 1}/$exerciseCount',
             ),
           ],
         ),
@@ -474,7 +475,7 @@ class _RestView extends ConsumerWidget {
                       style: theme.textTheme.titleMedium,
                     ),
                     Text(
-                      '${formatWeight(next.weight)} кг × ${next.reps}',
+                      '${formatLoad(next.weight)} × ${next.reps}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontFeatures: tabularFigures,
@@ -681,15 +682,6 @@ class _SetDot extends StatelessWidget {
       ),
     );
   }
-}
-
-/// «80 × 8, 8, 7» при одном весе, иначе «80 × 8, 82.5 × 7».
-String compactSets(List<SetEntry> sets) {
-  if (sets.every((s) => s.weight == sets.first.weight)) {
-    return '${formatWeight(sets.first.weight)} × '
-        '${sets.map((s) => s.reps).join(', ')}';
-  }
-  return sets.map((s) => '${formatWeight(s.weight)} × ${s.reps}').join(', ');
 }
 
 /// Пустое поле — 0; мусор, бесконечность и отрицательные — null (значение не меняется).

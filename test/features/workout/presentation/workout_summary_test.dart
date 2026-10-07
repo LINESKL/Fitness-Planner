@@ -25,11 +25,17 @@ Workout upper(String id, DateTime start, int minutes, double bench) => Workout(
   ],
 );
 
-Future<void> openSummary(WidgetTester tester, List<Workout> workouts, String id) async {
+Future<void> openSummary(
+  WidgetTester tester,
+  List<Workout> workouts,
+  String id,
+) async {
   await pumpApp(
     tester,
     overrides: [
-      workoutRepositoryProvider.overrideWithValue(InMemoryWorkoutRepository(workouts)),
+      workoutRepositoryProvider.overrideWithValue(
+        InMemoryWorkoutRepository(workouts),
+      ),
     ],
   );
   GoRouter.of(tester.element(find.byType(Navigator).first)).go('/summary/$id');

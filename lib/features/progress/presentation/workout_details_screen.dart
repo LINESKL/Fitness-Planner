@@ -8,6 +8,7 @@ import '../../../core/widgets/message_view.dart';
 import '../../workout/domain/set_entry.dart';
 import '../../workout/domain/stats.dart';
 import '../../workout/domain/workout.dart';
+import '../../workout/presentation/set_format.dart';
 import '../../workout/presentation/workout_providers.dart';
 
 const setTypeLabels = {
@@ -84,7 +85,7 @@ class _Details extends StatelessWidget {
                     for (final set in entry.sets)
                       Text(
                         [
-                          '${formatWeight(set.weight)} кг × ${set.reps}',
+                          '${formatLoad(set.weight)} × ${set.reps}',
                           if (set.type != SetType.normal)
                             setTypeLabels[set.type],
                           if (set.rpe != null) 'RPE ${formatWeight(set.rpe!)}',
