@@ -43,26 +43,26 @@ void main() {
 
     final workouts = await target.all();
     expect(workouts.length, 2);
-    expect(
-      workouts.firstWhere((w) => w.startedAt.day == 1).entries.length,
-      2,
-    );
+    expect(workouts.firstWhere((w) => w.startedAt.day == 1).entries.length, 2);
     expect(prefs.getBool(migratedV2Key), isTrue);
   });
 
-  test('повторный запуск ничего не дублирует и не трогает новые данные', () async {
-    final old = await LegacyLogsBox.open();
-    await old.addLogs([log('Жим', DateTime(2026, 10, 1, 18))]);
-    final target = InMemoryWorkoutRepository();
-    final prefs = await SharedPreferences.getInstance();
+  test(
+    'повторный запуск ничего не дублирует и не трогает новые данные',
+    () async {
+      final old = await LegacyLogsBox.open();
+      await old.addLogs([log('Жим', DateTime(2026, 10, 1, 18))]);
+      final target = InMemoryWorkoutRepository();
+      final prefs = await SharedPreferences.getInstance();
 
-    await migrateToV2(old: old, target: target, prefs: prefs);
-    final id = (await target.all()).single.id;
-    await target.delete(id);
-    await migrateToV2(old: old, target: target, prefs: prefs);
+      await migrateToV2(old: old, target: target, prefs: prefs);
+      final id = (await target.all()).single.id;
+      await target.delete(id);
+      await migrateToV2(old: old, target: target, prefs: prefs);
 
-    expect(await target.all(), isEmpty);
-  });
+      expect(await target.all(), isEmpty);
+    },
+  );
 
   test('пустой старый бокс — только флаг', () async {
     final target = InMemoryWorkoutRepository();

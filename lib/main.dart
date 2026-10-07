@@ -26,6 +26,11 @@ Future<void> main() async {
     target: workouts,
     prefs: prefs,
   );
+  final program = await HiveProgramRepository.open();
+  final notes = await HiveNoteRepository.open();
+  final body = await HiveBodyRepository.open();
+  final customExercises = await HiveCustomExerciseRepository.open();
+  final activeWorkout = await HiveActiveWorkoutStore.open();
   final exercises = await CachedExerciseRepository.open(
     RemoteExerciseRepository(WgerApi.create()),
   );
@@ -34,6 +39,11 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         workoutRepositoryProvider.overrideWithValue(workouts),
+        programRepositoryProvider.overrideWithValue(program),
+        noteRepositoryProvider.overrideWithValue(notes),
+        bodyRepositoryProvider.overrideWithValue(body),
+        customExerciseRepositoryProvider.overrideWithValue(customExercises),
+        activeWorkoutStoreProvider.overrideWithValue(activeWorkout),
         exerciseRepositoryProvider.overrideWithValue(exercises),
         authRepositoryProvider.overrideWithValue(LocalAuthRepository(prefs)),
       ],

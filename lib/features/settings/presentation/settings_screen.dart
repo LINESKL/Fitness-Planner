@@ -5,10 +5,46 @@ import 'package:provider/provider.dart' show WatchContext;
 import '../../../core/format.dart';
 import '../../../core/widgets/max_width.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../workout/data/demo_data.dart';
+import '../../workout/presentation/workout_providers.dart';
 import 'settings_model.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _loadDemo(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Загрузить пример?'),
+        content: const Text(
+          'Добавятся программа из трёх дней и месяц тренировок. '
+          'Ваши данные останутся.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Загрузить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await loadDemo(
+      ref.read(workoutRepositoryProvider),
+      ref.read(programRepositoryProvider),
+      ref.read(bodyRepositoryProvider),
+      DateTime.now(),
+    );
+    ref.invalidate(workoutsProvider);
+    messenger.showSnackBar(const SnackBar(content: Text('Пример загружен')));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,6 +90,14 @@ class SettingsScreen extends ConsumerWidget {
                     onSelected: (_) => settings.setRestSeconds(seconds),
                   ),
               ],
+            ),
+            const SizedBox(height: 24),
+            Text('Данные', style: title),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _loadDemo(context, ref),
+              icon: const Icon(Icons.auto_awesome_outlined),
+              label: const Text('Загрузить пример'),
             ),
             const SizedBox(height: 32),
             OutlinedButton.icon(

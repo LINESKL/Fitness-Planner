@@ -20,6 +20,26 @@ final workoutRepositoryProvider = Provider<WorkoutRepository>(
   (ref) => InMemoryWorkoutRepository.fromLogs(sampleHistory),
 );
 
+final programRepositoryProvider = Provider<ProgramRepository>(
+  (ref) => InMemoryProgramRepository(),
+);
+
+final noteRepositoryProvider = Provider<NoteRepository>(
+  (ref) => InMemoryNoteRepository(),
+);
+
+final bodyRepositoryProvider = Provider<BodyRepository>(
+  (ref) => InMemoryBodyRepository(),
+);
+
+final customExerciseRepositoryProvider = Provider<CustomExerciseRepository>(
+  (ref) => InMemoryCustomExerciseRepository(),
+);
+
+final activeWorkoutStoreProvider = Provider<ActiveWorkoutStore>(
+  (ref) => InMemoryActiveWorkoutStore(),
+);
+
 final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => RemoteExerciseRepository(WgerApi.create()),
 );
