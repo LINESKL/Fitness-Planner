@@ -181,4 +181,37 @@ void main() {
       expect(weekStreak([workout(DateTime(2026, 9, 22), {})], now), 0);
     });
   });
+
+  group('latestRecord', () {
+    test('последний момент, когда 1ПМ упражнения превысил прежний', () {
+      final r = latestRecord([
+        workout(DateTime(2026, 9, 1), {
+          'Жим': sets(80, [8]),
+          'Присед': sets(100, [5]),
+        }, id: 'a'),
+        workout(DateTime(2026, 9, 8), {
+          'Жим': sets(85, [6]),
+          'Присед': sets(95, [5]),
+        }, id: 'b'),
+        workout(DateTime(2026, 9, 15), {
+          'Жим': sets(80, [8]),
+        }, id: 'c'),
+      ]);
+
+      expect(r?.exercise, 'Жим');
+      expect((r?.set.weight, r?.set.reps), (85.0, 6));
+      expect(r?.date, DateTime(2026, 9, 8));
+    });
+
+    test('первые результаты рекордами не считаются', () {
+      expect(
+        latestRecord([
+          workout(DateTime(2026, 9, 1), {
+            'Жим': sets(80, [8]),
+          }),
+        ]),
+        isNull,
+      );
+    });
+  });
 }

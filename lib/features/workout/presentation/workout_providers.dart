@@ -11,6 +11,7 @@ import '../data/wger/wger_api.dart';
 import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/exercise_repository.dart';
+import '../domain/program.dart';
 import '../domain/repositories.dart';
 import '../domain/workout.dart';
 import '../domain/workout_async.dart';
@@ -105,6 +106,22 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
           ],
       history: history,
     );
+  }
+
+  /// Тренировка по дню программы. Идущую не сбрасывает.
+  Future<void> startTemplate(WorkoutTemplate template, {DateTime? now}) async {
+    if (state != null) return;
+    final history = await ref.read(historyProvider.future);
+    state = ActiveWorkout.fromTemplate(
+      template,
+      history,
+      now ?? DateTime.now(),
+    );
+  }
+
+  /// Пустая тренировка: упражнения добавляются по ходу.
+  void startEmpty({DateTime? now}) {
+    state ??= ActiveWorkout.empty(now ?? DateTime.now());
   }
 
   void update(ActiveWorkout Function(ActiveWorkout workout) change) {

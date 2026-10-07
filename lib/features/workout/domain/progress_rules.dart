@@ -117,3 +117,32 @@ int weekStreak(List<Workout> workouts, DateTime now) {
   }
   return streak;
 }
+
+typedef RecordEvent = ({String exercise, SetEntry set, DateTime date});
+
+/// Все рекорды по порядку: подход, чей 1ПМ превысил лучший прежний результат
+/// упражнения. Первые результаты упражнения рекордами не считаются.
+List<RecordEvent> recordHistory(List<Workout> workouts) {
+  final best = <String, double>{};
+  final events = <RecordEvent>[];
+  final sorted = [...workouts]
+    ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
+  for (final w in sorted) {
+    for (final e in w.entries) {
+      final sets = e.sets.where((s) => !s.isWarmup && s.reps > 0);
+      if (sets.isEmpty) continue;
+      final top = sets.reduce((a, b) => a.oneRepMax >= b.oneRepMax ? a : b);
+      final previous = best[e.exercise];
+      if (previous != null && top.oneRepMax > previous) {
+        events.add((exercise: e.exercise, set: top, date: w.startedAt));
+      }
+      if (previous == null || top.oneRepMax > previous) {
+        best[e.exercise] = top.oneRepMax;
+      }
+    }
+  }
+  return events;
+}
+
+RecordEvent? latestRecord(List<Workout> workouts) =>
+    recordHistory(workouts).lastOrNull;

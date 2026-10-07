@@ -11,7 +11,7 @@ void main() {
     await pumpApp(tester);
 
     expect(find.text('Начать тренировку'), findsOneWidget);
-    expect(find.text('Последняя тренировка'), findsOneWidget);
+    expect(find.text('Верх'), findsOneWidget);
   });
 
   testWidgets('светлая и тёмная тема', (tester) async {
@@ -45,8 +45,7 @@ void main() {
     await tester.tap(find.text('Начать тренировку'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Тренировка'), findsOneWidget);
-    expect(find.text('Приседания'), findsOneWidget);
+    expect(find.text('Жим лёжа'), findsOneWidget);
   });
 
   testWidgets('завершённая тренировка появляется в истории', (tester) async {
