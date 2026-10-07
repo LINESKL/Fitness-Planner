@@ -4,8 +4,12 @@ import 'set_entry.dart';
 /// Статистика календарной недели (с понедельника) и объём предыдущей.
 typedef WeekStats = ({int workouts, double volume, double previousVolume});
 
+/// Понедельник недели, в которую попадает [d], 00:00.
+DateTime weekStart(DateTime d) =>
+    DateTime(d.year, d.month, d.day - (d.weekday - 1));
+
 WeekStats weekStats(Iterable<ExerciseLog> logs, DateTime now) {
-  final start = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+  final start = weekStart(now);
   final previousStart = DateTime(start.year, start.month, start.day - 7);
 
   final days = <DateTime>{};
