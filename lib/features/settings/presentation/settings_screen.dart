@@ -46,7 +46,8 @@ class SettingsScreen extends ConsumerWidget {
     ref
       ..invalidate(workoutsProvider)
       ..invalidate(templatesProvider)
-      ..invalidate(programProvider);
+      ..invalidate(programProvider)
+      ..invalidate(bodyEntriesProvider);
     messenger.showSnackBar(const SnackBar(content: Text('Пример загружен')));
   }
 

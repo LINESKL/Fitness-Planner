@@ -137,4 +137,14 @@ void main() {
     await again.save(null);
     expect(await again.load(), isNull);
   });
+
+  test('повреждённая идущая тренировка — null и очистка, без падения', () async {
+    final box = await Hive.openBox<Map>(HiveActiveWorkoutStore.boxName);
+    await box.put('current', {'title': 'Ноги', 'cursor': 'мусор'});
+
+    final store = HiveActiveWorkoutStore(box);
+
+    expect(await store.load(), isNull);
+    expect(box.isEmpty, isTrue);
+  });
 }

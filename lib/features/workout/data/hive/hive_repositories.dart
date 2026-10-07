@@ -146,11 +146,18 @@ class HiveActiveWorkoutStore implements ActiveWorkoutStore {
 
   final Box<Map> _box;
 
+  /// Повреждённая запись не должна ронять запуск: она удаляется, тренировки нет.
   @override
-  Future<ActiveWorkout?> load() async => switch (_box.get(_key)) {
-    final Map j => activeWorkoutFromJson(_json(j)),
-    _ => null,
-  };
+  Future<ActiveWorkout?> load() async {
+    final raw = _box.get(_key);
+    if (raw == null) return null;
+    try {
+      return activeWorkoutFromJson(_json(raw));
+    } on Object {
+      await _box.delete(_key);
+      return null;
+    }
+  }
 
   @override
   Future<void> save(ActiveWorkout? workout) => workout == null

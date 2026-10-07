@@ -56,4 +56,18 @@ void main() {
       reason: '${used.difference(catalog)}',
     );
   });
+
+  test('пример дописывает дни к своей программе, без дублей', () async {
+    final program = InMemoryProgramRepository(
+      templates: const [WorkoutTemplate(id: 'mine', name: 'Мой день', exercises: [])],
+      program: const Program(templateIds: ['mine']),
+    );
+
+    await loadDemo(InMemoryWorkoutRepository(), program, InMemoryBodyRepository(), now);
+    await loadDemo(InMemoryWorkoutRepository(), program, InMemoryBodyRepository(), now);
+
+    final ids = (await program.program()).templateIds;
+    expect(ids.first, 'mine');
+    expect(ids.length, 4);
+  });
 }

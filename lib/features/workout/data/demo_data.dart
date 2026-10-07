@@ -74,8 +74,16 @@ Future<void> loadDemo(
       ),
     );
   }
+  // Дни примера дописываются к своей программе, повторная загрузка не дублирует.
+  final existing = (await program.program()).templateIds;
   await program.saveProgram(
-    Program(templateIds: [for (final (id, _, _) in _days) id]),
+    Program(
+      templateIds: [
+        ...existing,
+        for (final (id, _, _) in _days)
+          if (!existing.contains(id)) id,
+      ],
+    ),
   );
 
   // Пн / Ср / Пт четырёх прошедших недель; день сплита идёт по кругу,

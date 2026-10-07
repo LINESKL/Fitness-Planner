@@ -94,6 +94,11 @@ void main() {
     tester,
   ) async {
     await pumpApp(tester, templates: const []);
+    // Провайдер замеров уже прочитан (как на вкладке «Тело») — после примера он должен обновиться.
+    final early = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold).first),
+    );
+    expect(await early.read(bodyEntriesProvider.future), isEmpty);
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Загрузить пример'));
@@ -105,6 +110,7 @@ void main() {
       tester.element(find.byType(Scaffold).first),
     );
     final workouts = await container.read(workoutsProvider.future);
+    expect(await container.read(bodyEntriesProvider.future), isNotEmpty);
     final program = await container.read(programRepositoryProvider).program();
     expect(workouts.length, greaterThan(10));
     expect(program.templateIds.length, 3);
