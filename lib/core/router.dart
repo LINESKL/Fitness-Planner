@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/exercises/presentation/custom_exercise_screen.dart';
 import '../features/exercises/presentation/exercise_details_screen.dart';
 import '../features/exercises/presentation/exercises_screen.dart';
 import '../features/home/presentation/home_screen.dart';
@@ -133,6 +134,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                 ),
                 routes: [
+                  GoRoute(
+                    path: 'edit/:id',
+                    name: 'exerciseEditor',
+                    parentNavigatorKey: rootKey,
+                    builder: (_, state) =>
+                        CustomExerciseScreen(id: state.pathParameters['id']!),
+                  ),
                   GoRoute(
                     path: ':id',
                     name: 'exerciseDetails',

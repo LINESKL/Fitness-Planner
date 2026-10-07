@@ -49,8 +49,39 @@ final exerciseRepositoryProvider = Provider<ExerciseRepository>(
   (ref) => RemoteExerciseRepository(WgerApi.create()),
 );
 
+/// Свои упражнения пользователя.
+final customExercisesProvider =
+    AsyncNotifierProvider<CustomExercisesNotifier, List<Exercise>>(
+      CustomExercisesNotifier.new,
+    );
+
+class CustomExercisesNotifier extends AsyncNotifier<List<Exercise>> {
+  @override
+  Future<List<Exercise>> build() =>
+      ref.watch(customExerciseRepositoryProvider).all();
+
+  Future<void> save(Exercise exercise) async {
+    await ref.read(customExerciseRepositoryProvider).save(exercise);
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> delete(String id) async {
+    await ref.read(customExerciseRepositoryProvider).delete(id);
+    ref.invalidateSelf();
+    await future;
+  }
+}
+
+/// Каталог: свои упражнения первыми, затем встроенные и wger.
 final exercisesProvider = FutureProvider<ExerciseCatalog>(
-  (ref) => ref.watch(exerciseRepositoryProvider).fetchExercises(),
+  (ref) async {
+    final custom = await ref.watch(customExercisesProvider.future);
+    final catalog = await ref
+        .watch(exerciseRepositoryProvider)
+        .fetchExercises();
+    return (items: [...custom, ...catalog.items], offline: catalog.offline);
+  },
   // Повтор — по кнопке на экране ошибки, без фоновых попыток.
   retry: (_, _) => null,
 );

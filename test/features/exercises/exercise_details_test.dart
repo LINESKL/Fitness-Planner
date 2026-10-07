@@ -49,7 +49,7 @@ void main() {
   });
 
   testWidgets('без истории — «Ещё не делали», графика нет', (tester) async {
-    await openExercise(tester, 'Сгибания на бицепс');
+    await openExercise(tester, 'Подтягивания');
 
     expect(find.text('Ещё не делали'), findsOneWidget);
     expect(find.byType(LineChart), findsNothing);

@@ -9,6 +9,7 @@ Future<String?> pickExercise(BuildContext context) =>
         builder: (context) => Scaffold(
           appBar: AppBar(title: const Text('Выбор упражнения')),
           body: ExercisesScreen(
+            selectCreated: true,
             onSelected: (e) => Navigator.of(context).pop(e.name),
           ),
         ),

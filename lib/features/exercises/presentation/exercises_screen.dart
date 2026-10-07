@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/message_view.dart';
 import '../../workout/domain/exercise.dart';
@@ -9,10 +10,17 @@ import '../../workout/domain/exercise_repository.dart';
 import '../../workout/presentation/workout_providers.dart';
 
 class ExercisesScreen extends ConsumerStatefulWidget {
-  const ExercisesScreen({super.key, this.onSelected});
+  const ExercisesScreen({
+    super.key,
+    this.onSelected,
+    this.selectCreated = false,
+  });
 
-  /// Если задан, экран работает как выбор упражнения.
+  /// Нажатие на упражнение (во вкладке — карточка, в выборе — выбор).
   final ValueChanged<Exercise>? onSelected;
+
+  /// Режим выбора: только что созданное своё упражнение сразу выбирается.
+  final bool selectCreated;
 
   @override
   ConsumerState<ExercisesScreen> createState() => _ExercisesScreenState();
@@ -48,6 +56,16 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
               e,
         ];
 
+  Future<void> _create() async {
+    final created = await context.pushNamed<Exercise>(
+      'exerciseEditor',
+      pathParameters: {'id': 'new'},
+    );
+    if (created != null && widget.selectCreated) {
+      widget.onSelected?.call(created);
+    }
+  }
+
   Widget _list(List<Exercise> list) {
     if (list.isEmpty) {
       return const MessageView(
@@ -59,11 +77,23 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     return RefreshIndicator(
       onRefresh: () => ref.refresh(exercisesProvider.future),
       child: ListView.builder(
-        itemCount: list.length,
-        itemBuilder: (context, i) => _ExerciseTile(
-          exercise: list[i],
-          onTap: onSelected == null ? null : () => onSelected(list[i]),
-        ),
+        itemCount: list.length + 1,
+        itemBuilder: (context, i) => i == 0
+            ? ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  child: const Icon(Icons.add),
+                ),
+                title: const Text('Своё упражнение'),
+                onTap: _create,
+              )
+            : _ExerciseTile(
+                exercise: list[i - 1],
+                onTap: onSelected == null
+                    ? null
+                    : () => onSelected(list[i - 1]),
+              ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
 import '../../../core/theme.dart';
@@ -40,6 +41,33 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
       ? formatTonnage(value)
       : '${formatKg(value)} кг';
 
+  Future<void> _delete(Exercise exercise) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Удалить «${exercise.name}»?'),
+        content: const Text('Прошлые тренировки с ним останутся в истории.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(customExercisesProvider.notifier).delete(exercise.id);
+    if (mounted) context.pop();
+  }
+
   Future<void> _editNote(Exercise exercise, String? current) async {
     final text = await showTextInputDialog(
       context,
@@ -61,8 +89,28 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
         .where((e) => e.id == widget.id)
         .firstOrNull;
 
+    final custom = exercise != null && exercise.id.startsWith('custom-');
     return Scaffold(
-      appBar: AppBar(title: Text(exercise?.name ?? 'Упражнение')),
+      appBar: AppBar(
+        title: Text(exercise?.name ?? 'Упражнение'),
+        actions: [
+          if (custom) ...[
+            IconButton(
+              tooltip: 'Изменить упражнение',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => context.pushNamed(
+                'exerciseEditor',
+                pathParameters: {'id': exercise.id},
+              ),
+            ),
+            IconButton(
+              tooltip: 'Удалить упражнение',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _delete(exercise),
+            ),
+          ],
+        ],
+      ),
       body: switch ((catalog, exercise)) {
         (_, final Exercise e) => _body(context, e),
         (AsyncLoading(), _) => const Center(child: CircularProgressIndicator()),
