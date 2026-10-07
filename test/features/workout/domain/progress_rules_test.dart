@@ -234,4 +234,36 @@ void main() {
     expect(bests.first.date, DateTime(2026, 9, 8));
     expect(bests.last.date, DateTime(2026, 9, 1));
   });
+
+  group('exerciseSeries', () {
+    final history = [
+      workout(DateTime(2026, 9, 8), {
+        'Жим': sets(85, [5, 4]),
+      }, id: 'b'),
+      workout(DateTime(2026, 9, 1), {
+        'Жим': [
+          const SetEntry(weight: 120, reps: 1, type: SetType.warmup),
+          ...sets(80, [8, 8]),
+        ],
+        'Присед': sets(100, [5]),
+      }, id: 'a'),
+      workout(DateTime(2026, 9, 15), {
+        'Присед': sets(100, [5]),
+      }, id: 'c'),
+    ];
+
+    test('точка на каждую тренировку с упражнением, по дате', () {
+      final series = exerciseSeries('Жим', history, ExerciseMetric.bestWeight);
+
+      expect(series.map((p) => (p.date.day, p.value)), [(1, 80.0), (8, 85.0)]);
+    });
+
+    test('1ПМ — лучший подход тренировки, объём — сумма без разминки', () {
+      final oneRm = exerciseSeries('Жим', history, ExerciseMetric.oneRepMax);
+      final volume = exerciseSeries('Жим', history, ExerciseMetric.volume);
+
+      expect(oneRm.first.value, closeTo(80 * (1 + 8 / 30), 0.001));
+      expect(volume.map((p) => p.value), [1280.0, 765.0]);
+    });
+  });
 }

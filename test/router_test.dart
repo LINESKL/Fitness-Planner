@@ -69,7 +69,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Грудь'), findsOneWidget);
-    expect(find.text('80 кг × 8, 80 кг × 8, 80 кг × 7'), findsOneWidget);
+    expect(await scrollToText(tester, '80 × 8, 8, 7'), findsOneWidget);
   });
 
   testWidgets('вкладка сохраняет экран при переключении', (tester) async {

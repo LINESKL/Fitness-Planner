@@ -1,3 +1,4 @@
+import 'exercise_log.dart';
 import 'set_entry.dart';
 import 'stats.dart';
 import 'workout.dart';
@@ -161,4 +162,32 @@ List<RecordEvent> personalBests(List<Workout> workouts) {
     }
   }
   return best.values.toList()..sort((a, b) => b.date.compareTo(a.date));
+}
+
+enum ExerciseMetric { oneRepMax, bestWeight, volume }
+
+/// Ряд для графика: точка на каждую тренировку с упражнением, по возрастанию даты.
+List<({DateTime date, double value})> exerciseSeries(
+  String exercise,
+  List<Workout> workouts,
+  ExerciseMetric metric,
+) {
+  final points = <({DateTime date, double value})>[];
+  for (final w in workouts) {
+    final sets = [
+      for (final e in w.entries.where((e) => e.exercise == exercise))
+        for (final s in e.sets)
+          if (!s.isWarmup && s.reps > 0) s,
+    ];
+    if (sets.isEmpty) continue;
+    final value = switch (metric) {
+      ExerciseMetric.oneRepMax =>
+        sets.map((s) => s.oneRepMax).reduce((a, b) => a > b ? a : b),
+      ExerciseMetric.bestWeight =>
+        sets.map((s) => s.weight).reduce((a, b) => a > b ? a : b),
+      ExerciseMetric.volume => totalVolume(sets),
+    };
+    points.add((date: w.startedAt, value: value));
+  }
+  return points..sort((a, b) => a.date.compareTo(b.date));
 }
