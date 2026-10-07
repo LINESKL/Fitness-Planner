@@ -8,6 +8,7 @@ import '../features/exercises/presentation/exercise_details_screen.dart';
 import '../features/exercises/presentation/exercises_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/program/presentation/program_screen.dart';
+import '../features/program/presentation/template_editor_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
 import '../features/progress/presentation/workout_details_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -67,6 +68,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/program',
                 name: 'program',
                 builder: (_, _) => const ProgramScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':templateId',
+                    name: 'templateEditor',
+                    parentNavigatorKey: rootKey,
+                    builder: (_, state) => TemplateEditorScreen(
+                      templateId: state.pathParameters['templateId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
