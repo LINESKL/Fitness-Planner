@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 abstract final class AppColors {
   static const accent = Color(0xFFFF6B2C);
   static const onAccent = Color(0xFF1A0A00);
+
+  /// Тот же оранжевый темнее: на светлом фоне яркий не даёт контраста 4.5:1.
+  static const accentOnLight = Color(0xFFC2410C);
 }
 
 /// Числа (вес, повторы, таймер) — табличные цифры, чтобы не прыгали при вводе.
@@ -17,6 +20,8 @@ final darkTheme = _theme(
     onPrimary: AppColors.onAccent,
     secondary: AppColors.accent,
     onSecondary: AppColors.onAccent,
+    secondaryContainer: Color(0xFF3D2418),
+    onSecondaryContainer: Color(0xFFFFC2A6),
     error: Color(0xFFFF6B6B),
     onError: Color(0xFF2A0000),
     surface: Color(0xFF0F0F10),
@@ -34,10 +39,12 @@ final darkTheme = _theme(
 final lightTheme = _theme(
   const ColorScheme(
     brightness: Brightness.light,
-    primary: AppColors.accent,
-    onPrimary: AppColors.onAccent,
-    secondary: AppColors.accent,
-    onSecondary: AppColors.onAccent,
+    primary: AppColors.accentOnLight,
+    onPrimary: Colors.white,
+    secondary: AppColors.accentOnLight,
+    onSecondary: Colors.white,
+    secondaryContainer: Color(0xFFFFE2D4),
+    onSecondaryContainer: Color(0xFF5C2200),
     error: Color(0xFFC62828),
     onError: Colors.white,
     surface: Colors.white,
@@ -143,7 +150,6 @@ ThemeData _theme(ColorScheme scheme) {
       indicatorColor: scheme.primary.withValues(alpha: 0.18),
     ),
     chipTheme: base.chipTheme.copyWith(
-      selectedColor: scheme.primary.withValues(alpha: 0.18),
       side: BorderSide(color: scheme.outlineVariant),
     ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
