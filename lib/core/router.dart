@@ -9,6 +9,7 @@ import '../features/exercises/presentation/exercises_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/program/presentation/program_screen.dart';
 import '../features/program/presentation/template_editor_screen.dart';
+import '../features/progress/presentation/body_entry_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
 import '../features/progress/presentation/workout_details_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -102,6 +103,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'progress',
                 builder: (_, _) => const ProgressScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'body/new',
+                    name: 'bodyEntryNew',
+                    parentNavigatorKey: rootKey,
+                    builder: (_, _) => const BodyEntryScreen(),
+                  ),
                   GoRoute(
                     path: 'workout/:workoutId',
                     name: 'workoutDetails',

@@ -214,4 +214,24 @@ void main() {
       );
     });
   });
+
+  test('personalBests — лучший подход каждого упражнения с датой', () {
+    final bests = personalBests([
+      workout(DateTime(2026, 9, 1), {
+        'Жим': sets(80, [8]),
+        'Присед': sets(100, [5]),
+      }, id: 'a'),
+      workout(DateTime(2026, 9, 8), {
+        'Жим': sets(85, [6]),
+      }, id: 'b'),
+      workout(DateTime(2026, 9, 15), {
+        'Жим': sets(80, [8]),
+      }, id: 'c'),
+    ]);
+
+    expect(bests.map((b) => b.exercise), ['Жим', 'Присед']);
+    expect((bests.first.set.weight, bests.first.set.reps), (85.0, 6));
+    expect(bests.first.date, DateTime(2026, 9, 8));
+    expect(bests.last.date, DateTime(2026, 9, 1));
+  });
 }

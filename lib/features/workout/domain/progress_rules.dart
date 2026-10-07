@@ -146,3 +146,19 @@ List<RecordEvent> recordHistory(List<Workout> workouts) {
 
 RecordEvent? latestRecord(List<Workout> workouts) =>
     recordHistory(workouts).lastOrNull;
+
+/// Лучший подход (по 1ПМ) каждого упражнения и когда он был; свежие рекорды первыми.
+List<RecordEvent> personalBests(List<Workout> workouts) {
+  final best = <String, RecordEvent>{};
+  for (final w in workouts) {
+    for (final e in w.entries) {
+      for (final s in e.sets.where((s) => !s.isWarmup && s.reps > 0)) {
+        final current = best[e.exercise];
+        if (current == null || s.oneRepMax > current.set.oneRepMax) {
+          best[e.exercise] = (exercise: e.exercise, set: s, date: w.startedAt);
+        }
+      }
+    }
+  }
+  return best.values.toList()..sort((a, b) => b.date.compareTo(a.date));
+}

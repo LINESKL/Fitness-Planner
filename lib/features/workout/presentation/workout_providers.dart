@@ -9,6 +9,8 @@ import '../data/remote_exercise_repository.dart';
 import '../data/sample_data.dart';
 import '../data/wger/wger_api.dart';
 import '../domain/active_workout.dart';
+import '../domain/body.dart';
+import '../domain/exercise.dart';
 import '../domain/exercise_log.dart';
 import '../domain/exercise_repository.dart';
 import '../domain/program.dart';
@@ -220,3 +222,39 @@ class RestLeftNotifier extends Notifier<Duration?> {
 final noteProvider = FutureProvider.family<String?, String>(
   (ref, exercise) => ref.watch(noteRepositoryProvider).note(exercise),
 );
+
+/// Замеры тела, от старых к новым.
+final bodyEntriesProvider =
+    AsyncNotifierProvider<BodyEntriesNotifier, List<BodyEntry>>(
+      BodyEntriesNotifier.new,
+    );
+
+class BodyEntriesNotifier extends AsyncNotifier<List<BodyEntry>> {
+  @override
+  Future<List<BodyEntry>> build() async =>
+      (await ref.watch(bodyRepositoryProvider).all())
+        ..sort((a, b) => a.date.compareTo(b.date));
+
+  Future<void> save(BodyEntry entry) async {
+    await ref.read(bodyRepositoryProvider).save(entry);
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> delete(String id) async {
+    await ref.read(bodyRepositoryProvider).delete(id);
+    ref.invalidateSelf();
+    await future;
+  }
+}
+
+/// Группа мышц по названию упражнения: встроенный каталог, wger, свои; иначе «Другое».
+final muscleGroupOfProvider = Provider<String Function(String exercise)>((ref) {
+  final groups = {
+    for (final e in sampleExercises) e.name: e.muscleGroup,
+    for (final e
+        in ref.watch(exercisesProvider).value?.items ?? const <Exercise>[])
+      e.name: e.muscleGroup,
+  };
+  return (name) => groups[name] ?? 'Другое';
+});
