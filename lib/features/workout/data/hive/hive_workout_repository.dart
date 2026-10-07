@@ -41,7 +41,7 @@ class HiveWorkoutRepository implements WorkoutRepository {
         SetEntry(
           weight: (s['weight'] as num).toDouble(),
           reps: s['reps'] as int,
-          isWarmup: s['warmup'] as bool,
+          type: s['warmup'] as bool ? SetType.warmup : SetType.normal,
         ),
     ],
   );

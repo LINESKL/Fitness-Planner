@@ -7,8 +7,27 @@ void main() {
       expect(const SetEntry(weight: 80, reps: 8).volume, 640);
     });
 
+    test('отказ и дроп-сет входят в объём, rpe хранится', () {
+      const failure = SetEntry(
+        weight: 80,
+        reps: 6,
+        type: SetType.failure,
+        rpe: 9.5,
+      );
+      expect(failure.volume, 480);
+      expect(failure.rpe, 9.5);
+      expect(failure.isWarmup, isFalse);
+      expect(
+        const SetEntry(weight: 60, reps: 10, type: SetType.drop).volume,
+        600,
+      );
+    });
+
     test('разминочный подход не входит в объём', () {
-      expect(const SetEntry(weight: 40, reps: 10, isWarmup: true).volume, 0);
+      expect(
+        const SetEntry(weight: 40, reps: 10, type: SetType.warmup).volume,
+        0,
+      );
     });
 
     test('1ПМ по Эпли', () {

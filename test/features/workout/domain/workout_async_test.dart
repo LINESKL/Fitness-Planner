@@ -11,7 +11,7 @@ void main() {
         exercise: 'Жим лёжа',
         date: DateTime(2026, 9, 27),
         sets: const [
-          SetEntry(weight: 40, reps: 10, isWarmup: true),
+          SetEntry(weight: 40, reps: 10, type: SetType.warmup),
           SetEntry(weight: 82.5, reps: 8),
           SetEntry(weight: 82.5, reps: 7),
         ],

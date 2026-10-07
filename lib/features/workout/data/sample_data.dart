@@ -18,7 +18,7 @@ List<SetEntry> _sets(double weight, List<int> reps) => [
   for (final r in reps) SetEntry(weight: weight, reps: r),
 ];
 
-const _warmup = SetEntry(weight: 40, reps: 10, isWarmup: true);
+const _warmup = SetEntry(weight: 40, reps: 10, type: SetType.warmup);
 
 final sampleHistory = [
   ExerciseLog(

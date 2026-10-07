@@ -3,7 +3,7 @@ import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const warmup = SetEntry(weight: 40, reps: 10, isWarmup: true);
+  const warmup = SetEntry(weight: 40, reps: 10, type: SetType.warmup);
   const s80x8 = SetEntry(weight: 80, reps: 8);
   const s80x6 = SetEntry(weight: 80, reps: 6);
   const s75x10 = SetEntry(weight: 75, reps: 10);

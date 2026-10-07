@@ -1,14 +1,21 @@
-/// Один подход: вес в кг и количество повторов.
+/// Тип подхода: разминка не идёт в объём и рекорды, остальные — идут.
+enum SetType { normal, warmup, failure, drop }
+
+/// Один подход: вес в кг, количество повторов, тип и тяжесть (RPE 1–10).
 class SetEntry {
   const SetEntry({
     required this.weight,
     required this.reps,
-    this.isWarmup = false,
+    this.type = SetType.normal,
+    this.rpe,
   });
 
   final double weight;
   final int reps;
-  final bool isWarmup;
+  final SetType type;
+  final double? rpe;
+
+  bool get isWarmup => type == SetType.warmup;
 
   /// Тоннаж подхода; разминка не считается.
   double get volume => isWarmup ? 0 : weight * reps;
