@@ -63,15 +63,16 @@ void main() {
     expect(c.read(activeWorkoutProvider)?.exercises.single.name, 'Жим лёжа');
   });
 
-  test('addExercise берёт прошлые подходы из истории', () async {
+  test('addExercise берёт прошлые подходы из истории с прогрессией', () async {
     final c = containerWith([bench]);
     await workout(c).start(plan: []);
 
     await workout(c).addExercise('Жим лёжа');
 
+    // В прошлый раз 80 × 8 выполнено полностью — подсказка +2.5 кг.
     expect(
       c.read(activeWorkoutProvider)?.exercises.single.sets.single.weight,
-      80,
+      82.5,
     );
   });
 
