@@ -45,6 +45,7 @@ Future<void> pumpApp(
   Size? size,
   List<WorkoutTemplate> templates = testTemplates,
   List<Override> overrides = const [],
+  int restSeconds = 0,
 }) async {
   if (size != null) {
     tester.view.physicalSize = size;
@@ -52,7 +53,7 @@ Future<void> pumpApp(
     addTearDown(tester.view.reset);
   }
   SharedPreferences.setMockInitialValues({
-    'rest_seconds': 0,
+    'rest_seconds': restSeconds,
     'signed_in': signedIn,
   });
   final prefs = await SharedPreferences.getInstance();

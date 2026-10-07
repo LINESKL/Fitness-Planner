@@ -12,6 +12,8 @@ import '../domain/active_workout.dart';
 import '../domain/exercise_log.dart';
 import '../domain/exercise_repository.dart';
 import '../domain/program.dart';
+import '../domain/progress_rules.dart';
+import '../domain/set_entry.dart';
 import '../domain/repositories.dart';
 import '../domain/workout.dart';
 import '../domain/workout_async.dart';
@@ -134,47 +136,43 @@ class ActiveWorkoutNotifier extends Notifier<ActiveWorkout?> {
     update((w) => w.addExercise(name, history));
   }
 
-  /// Сначала сохраняет, потом закрывает: при ошибке записи тренировка не теряется.
-  Future<void> finish({DateTime? now}) async {
+  Future<void> replaceExercise(int index, String name) async {
+    final history = await ref.read(historyProvider.future);
+    update((w) => w.replaceExercise(index, name, history));
+  }
+
+  /// «Готово» по текущему подходу. Возвращает рекорд, если он побит.
+  Future<RecordEvent?> completeCurrent(Duration rest) async {
     final current = state;
-    if (current == null) return;
-    final workout = current.toWorkout(newId(), now ?? DateTime.now());
+    final set = current?.currentSet;
+    final exercise = current?.currentExercise;
+    if (current == null || set == null || exercise == null) return null;
+
+    final workouts = await ref.read(workoutsProvider.future);
+    final entry = SetEntry(
+      weight: set.weight,
+      reps: set.reps,
+      type: set.type,
+      rpe: set.rpe,
+    );
+    final record = isNewRecord(entry, recordsFor(exercise.name, workouts))
+        ? (exercise: exercise.name, set: entry, date: current.startedAt)
+        : null;
+    update((w) => w.completeCurrent(now: clock.now(), rest: rest));
+    return record;
+  }
+
+  /// Сначала сохраняет, потом закрывает: при ошибке записи тренировка не теряется.
+  /// Возвращает сохранённую тренировку или null, если сохранять нечего.
+  Future<Workout?> finish({DateTime? now}) async {
+    final current = state;
+    if (current == null) return null;
+    final workout = current.toWorkout(newId(), now ?? clock.now());
     if (workout.entries.isNotEmpty) {
       await ref.read(workoutsProvider.notifier).save(workout);
     }
     state = null;
-  }
-}
-
-/// Сколько осталось отдыхать; null — таймер не идёт.
-final restTimerProvider = NotifierProvider<RestTimerNotifier, Duration?>(
-  RestTimerNotifier.new,
-);
-
-class RestTimerNotifier extends Notifier<Duration?> {
-  StreamSubscription<Duration>? _subscription;
-
-  @override
-  Duration? build() {
-    ref.onDispose(() => _subscription?.cancel());
-    return null;
-  }
-
-  /// Перезапускает отсчёт; нулевая длительность — таймер выключен.
-  void start(Duration total) {
-    _subscription?.cancel();
-    if (total <= Duration.zero) {
-      state = null;
-      return;
-    }
-    state = total;
-    _subscription = restTimer(total)
-        .listen((left) => state = left > Duration.zero ? left : null);
-  }
-
-  void skip() {
-    _subscription?.cancel();
-    state = null;
+    return workout.entries.isEmpty ? null : workout;
   }
 }
 
@@ -192,11 +190,26 @@ class RestLeftNotifier extends Notifier<Duration?> {
     );
     if (endsAt == null) return null;
 
+    void finishRest() => ref
+        .read(activeWorkoutProvider.notifier)
+        .update((w) => w.restEndsAt == endsAt ? w.skipRest() : w);
+
     final timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       state = restLeft(endsAt, clock.now());
-      if (state == null) timer.cancel();
+      if (state == null) {
+        timer.cancel();
+        finishRest();
+      }
     });
     ref.onDispose(timer.cancel);
-    return restLeft(endsAt, clock.now());
+    final left = restLeft(endsAt, clock.now());
+    // Отдых уже вышел (например, приложение было закрыто) — сразу к подходу.
+    if (left == null) Future.microtask(finishRest);
+    return left;
   }
 }
+
+/// Заметка к упражнению («сиденье на 4»).
+final noteProvider = FutureProvider.family<String?, String>(
+  (ref, exercise) => ref.watch(noteRepositoryProvider).note(exercise),
+);

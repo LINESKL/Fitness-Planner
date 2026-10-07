@@ -45,7 +45,10 @@ void main() {
   });
 
   test('addSet копирует последний подход без отметки', () {
-    final workout = start().toggleDone(0, 1).addSet(0);
+    final workout = start()
+        .goTo(0, 1)
+        .completeCurrent(now: started, rest: Duration.zero)
+        .addSet(0);
 
     final sets = workout.exercises.first.sets;
     expect(sets.length, 3);
@@ -56,46 +59,49 @@ void main() {
   });
 
   test('updateSet меняет только переданные поля', () {
-    final workout = start().updateSet(0, 0, weight: 82.5);
+    final workout = start().editSet(0, 0, weight: 82.5);
 
     final set = workout.exercises.first.sets.first;
     expect((set.weight, set.reps), (82.5, 8));
   });
 
-  test('toggleDone переключает отметку туда и обратно', () {
-    final once = start().toggleDone(0, 0);
-    final twice = once.toggleDone(0, 0);
-
-    expect(once.exercises.first.sets.first.done, isTrue);
-    expect(twice.exercises.first.sets.first.done, isFalse);
-  });
-
   test('исходный объект не меняется', () {
     final original = start();
-    original.updateSet(0, 0, weight: 100).toggleDone(0, 0).addSet(1);
+    original
+        .editSet(0, 0, weight: 100)
+        .completeCurrent(now: started, rest: Duration.zero)
+        .addSet(1);
 
     expect(original.exercises.first.sets.first.weight, 80);
     expect(original.exercises.first.sets.first.done, isFalse);
     expect(original.exercises.last.sets.length, 1);
   });
 
-  group('toLogs', () {
+  group('toWorkout', () {
     final finished = DateTime(2026, 10, 4, 19);
 
     test('сохраняет только отмеченные подходы', () {
-      final logs = start().toggleDone(0, 1).toLogs(finished);
+      final logs = start()
+          .goTo(0, 1)
+          .completeCurrent(now: started, rest: Duration.zero)
+          .toWorkout('w', finished)
+          .logs;
 
       expect(logs.single.exercise, 'Жим лёжа');
-      expect(logs.single.date, finished);
+      // Дата лога — начало тренировки.
+      expect(logs.single.date, started);
       expect(logs.single.sets.map((s) => (s.weight, s.reps)), [(80.0, 7)]);
     });
 
     test('без отметок — пустой список', () {
-      expect(start().toLogs(finished), isEmpty);
+      expect(start().toWorkout('w', finished).entries, isEmpty);
     });
 
     test('отмеченный подход с нулём повторов не сохраняется', () {
-      expect(start().toggleDone(1, 0).toLogs(finished), isEmpty);
+      final w = start()
+          .goTo(1, 0)
+          .completeCurrent(now: started, rest: Duration.zero);
+      expect(w.toWorkout('w', finished).entries, isEmpty);
     });
   });
 

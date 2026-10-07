@@ -13,6 +13,8 @@ import '../features/progress/presentation/progress_screen.dart';
 import '../features/progress/presentation/workout_details_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/workout/presentation/active_workout_screen.dart';
+import '../features/workout/presentation/workout_plan_screen.dart';
+import '../features/workout/presentation/workout_summary_screen.dart';
 import '../home_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -39,8 +41,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/workout',
         name: 'workout',
-        parentNavigatorKey: rootKey,
         builder: (_, _) => const ActiveWorkoutScreen(),
+        routes: [
+          GoRoute(
+            path: 'plan',
+            name: 'workoutPlan',
+            builder: (_, _) => const WorkoutPlanScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/summary/:workoutId',
+        name: 'workoutSummary',
+        builder: (_, state) =>
+            WorkoutSummaryScreen(workoutId: state.pathParameters['workoutId']!),
       ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => HomeShell(shell: shell),

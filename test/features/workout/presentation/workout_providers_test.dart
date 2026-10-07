@@ -58,7 +58,9 @@ void main() {
   test('повторный start не сбрасывает идущую тренировку', () async {
     final c = containerWith([bench]);
     await workout(c).start(plan: ['Жим лёжа']);
-    workout(c).update((w) => w.toggleDone(0, 0));
+    workout(c).update(
+      (w) => w.completeCurrent(now: DateTime(2026, 10, 4), rest: Duration.zero),
+    );
 
     await workout(c).start(plan: ['Приседания']);
 
@@ -83,7 +85,10 @@ void main() {
     () async {
       final c = containerWith([bench]);
       await workout(c).start(plan: ['Жим лёжа']);
-      workout(c).update((w) => w.toggleDone(0, 0));
+      workout(c).update(
+        (w) =>
+            w.completeCurrent(now: DateTime(2026, 10, 4), rest: Duration.zero),
+      );
 
       await workout(c).finish(now: DateTime(2026, 10, 4, 19));
 

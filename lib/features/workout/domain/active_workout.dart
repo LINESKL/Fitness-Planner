@@ -393,30 +393,6 @@ class ActiveWorkout {
     ],
   );
 
-  // ---- Совместимость со старым экраном таблицы (уберётся в Task 14). ----
-
-  ActiveWorkout updateSet(int exercise, int set, {double? weight, int? reps}) =>
-      editSet(exercise, set, weight: weight, reps: reps);
-
-  ActiveWorkout toggleDone(int exercise, int set) => _copy(
-    exercises: _setsUpdated(
-      exercise,
-      (sets) => [
-        for (final (i, s) in sets.indexed)
-          i == set ? s.copyWith(done: !s.done) : s,
-      ],
-    ),
-  );
-
-  /// Сохраняются только отмеченные подходы с повторами; пустые упражнения отбрасываются.
-  List<ExerciseLog> toLogs(DateTime finishedAt) => toWorkout('', finishedAt)
-      .entries
-      .map(
-        (e) =>
-            ExerciseLog(exercise: e.exercise, date: finishedAt, sets: e.sets),
-      )
-      .toList();
-
   List<ActiveExercise> _setsUpdated(
     int exercise,
     List<WorkoutSet> Function(List<WorkoutSet> sets) update,

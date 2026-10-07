@@ -52,8 +52,11 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.text('Начать тренировку'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(Checkbox).first);
+    await tester.tap(find.text('Готово'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Завершить'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Готово'));
     await tester.pumpAndSettle();
     await tester.tap(navItem('Прогресс'));
     await tester.pumpAndSettle();
