@@ -48,3 +48,11 @@ abstract interface class ActiveWorkoutStore {
   /// null — очистить.
   Future<void> save(ActiveWorkout? workout);
 }
+
+/// Избранные упражнения (по id).
+abstract interface class FavoriteRepository {
+  Future<Set<String>> all();
+
+  /// Добавить, если нет; убрать, если есть.
+  Future<void> toggle(String exerciseId);
+}

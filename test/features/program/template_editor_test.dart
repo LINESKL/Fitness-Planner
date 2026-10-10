@@ -17,7 +17,7 @@ Future<void> openProgram(WidgetTester tester) async {
 Future<void> addExercise(WidgetTester tester, String name) async {
   await tester.tap(find.text('Добавить упражнение'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text(name));
+  await tester.tap(await scrollToText(tester, name));
   await tester.pumpAndSettle();
 }
 

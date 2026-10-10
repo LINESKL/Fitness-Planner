@@ -103,3 +103,14 @@ class InMemoryActiveWorkoutStore implements ActiveWorkoutStore {
   @override
   Future<void> save(ActiveWorkout? workout) async => _current = workout;
 }
+
+class InMemoryFavoriteRepository implements FavoriteRepository {
+  final _ids = <String>{};
+
+  @override
+  Future<Set<String>> all() async => {..._ids};
+
+  @override
+  Future<void> toggle(String exerciseId) async =>
+      _ids.remove(exerciseId) || _ids.add(exerciseId);
+}

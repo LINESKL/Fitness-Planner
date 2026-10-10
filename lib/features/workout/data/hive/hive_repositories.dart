@@ -164,3 +164,22 @@ class HiveActiveWorkoutStore implements ActiveWorkoutStore {
       ? _box.delete(_key)
       : _box.put(_key, activeWorkoutToJson(workout));
 }
+
+class HiveFavoriteRepository implements FavoriteRepository {
+  HiveFavoriteRepository(this._box);
+
+  static const boxName = 'favorites';
+
+  static Future<HiveFavoriteRepository> open() async =>
+      HiveFavoriteRepository(await Hive.openBox<bool>(boxName));
+
+  final Box<bool> _box;
+
+  @override
+  Future<Set<String>> all() async => {for (final k in _box.keys) k as String};
+
+  @override
+  Future<void> toggle(String exerciseId) => _box.containsKey(exerciseId)
+      ? _box.delete(exerciseId)
+      : _box.put(exerciseId, true);
+}

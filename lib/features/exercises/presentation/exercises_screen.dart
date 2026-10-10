@@ -32,6 +32,7 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
   /// Поиск свой у каждого экрана: вкладка и выбор в тренировке не мешают друг другу.
   String _query = '';
   Timer? _timer;
+  bool _favoritesOnly = false;
 
   @override
   void dispose() {
@@ -47,14 +48,21 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     );
   }
 
-  List<Exercise> _filter(List<Exercise> items) => _query.isEmpty
-      ? items
-      : [
-          for (final e in items)
-            if (e.name.toLowerCase().contains(_query) ||
-                e.muscleGroup.toLowerCase().contains(_query))
-              e,
-        ];
+  /// Поиск, фильтр «Избранное»; избранные — первыми.
+  List<Exercise> _filter(List<Exercise> items, Set<String> favorites) {
+    final found = [
+      for (final e in items)
+        if ((_query.isEmpty ||
+                e.name.toLowerCase().contains(_query) ||
+                e.muscleGroup.toLowerCase().contains(_query)) &&
+            (!_favoritesOnly || favorites.contains(e.id)))
+          e,
+    ];
+    return [
+      ...found.where((e) => favorites.contains(e.id)),
+      ...found.where((e) => !favorites.contains(e.id)),
+    ];
+  }
 
   Future<void> _create() async {
     final created = await context.pushNamed<Exercise>(
@@ -66,11 +74,13 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     }
   }
 
-  Widget _list(List<Exercise> list) {
+  Widget _list(List<Exercise> list, Set<String> favorites) {
     if (list.isEmpty) {
-      return const MessageView(
-        icon: Icons.search_off,
-        text: 'Ничего не нашлось',
+      return MessageView(
+        icon: _favoritesOnly ? Icons.star_outline : Icons.search_off,
+        text: _favoritesOnly && _query.isEmpty
+            ? 'Отметьте упражнения звёздочкой — они появятся здесь'
+            : 'Ничего не нашлось',
       );
     }
     final onSelected = widget.onSelected;
@@ -90,6 +100,9 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
               )
             : _ExerciseTile(
                 exercise: list[i - 1],
+                favorite: favorites.contains(list[i - 1].id),
+                onToggleFavorite: () =>
+                    ref.read(favoritesProvider.notifier).toggle(list[i - 1].id),
                 onTap: onSelected == null
                     ? null
                     : () => onSelected(list[i - 1]),
@@ -100,15 +113,28 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final favorites = ref.watch(favoritesProvider).value ?? const <String>{};
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: TextField(
             onChanged: _search,
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.search),
               hintText: 'Название или группа мышц',
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FilterChip(
+              avatar: const Icon(Icons.star, size: 18),
+              label: const Text('Избранное'),
+              selected: _favoritesOnly,
+              onSelected: (v) => setState(() => _favoritesOnly = v),
             ),
           ),
         ),
@@ -119,7 +145,12 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
                 data: (catalog) => Column(
                   children: [
                     if (catalog.offline) const _OfflineBanner(),
-                    Expanded(child: _list(_filter(catalog.items))),
+                    Expanded(
+                      child: _list(
+                        _filter(catalog.items, favorites),
+                        favorites,
+                      ),
+                    ),
                   ],
                 ),
                 error: (error, _) => MessageView(
@@ -157,9 +188,16 @@ class _OfflineBanner extends StatelessWidget {
 }
 
 class _ExerciseTile extends StatelessWidget {
-  const _ExerciseTile({required this.exercise, this.onTap});
+  const _ExerciseTile({
+    required this.exercise,
+    required this.favorite,
+    required this.onToggleFavorite,
+    this.onTap,
+  });
 
   final Exercise exercise;
+  final bool favorite;
+  final VoidCallback onToggleFavorite;
   final VoidCallback? onTap;
 
   @override
@@ -190,7 +228,14 @@ class _ExerciseTile extends StatelessWidget {
         exercise.muscleGroup,
         style: TextStyle(color: scheme.onSurfaceVariant),
       ),
-      trailing: onTap == null ? null : const Icon(Icons.chevron_right),
+      trailing: IconButton(
+        tooltip: favorite ? 'Убрать из избранного' : 'В избранное',
+        icon: Icon(
+          favorite ? Icons.star : Icons.star_outline,
+          color: favorite ? scheme.primary : scheme.onSurfaceVariant,
+        ),
+        onPressed: onToggleFavorite,
+      ),
       onTap: onTap,
     );
   }

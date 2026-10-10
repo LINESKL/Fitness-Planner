@@ -30,6 +30,7 @@ Future<void> main() async {
   final notes = await HiveNoteRepository.open();
   final body = await HiveBodyRepository.open();
   final customExercises = await HiveCustomExerciseRepository.open();
+  final favorites = await HiveFavoriteRepository.open();
   final activeWorkout = await HiveActiveWorkoutStore.open();
   final restoredWorkout = await activeWorkout.load();
   final exercises = await CachedExerciseRepository.open(
@@ -44,6 +45,7 @@ Future<void> main() async {
         noteRepositoryProvider.overrideWithValue(notes),
         bodyRepositoryProvider.overrideWithValue(body),
         customExerciseRepositoryProvider.overrideWithValue(customExercises),
+        favoriteRepositoryProvider.overrideWithValue(favorites),
         activeWorkoutStoreProvider.overrideWithValue(activeWorkout),
         initialActiveWorkoutProvider.overrideWithValue(restoredWorkout),
         exerciseRepositoryProvider.overrideWithValue(exercises),

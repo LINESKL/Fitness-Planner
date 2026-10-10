@@ -138,13 +138,26 @@ void main() {
     expect(await again.load(), isNull);
   });
 
-  test('повреждённая идущая тренировка — null и очистка, без падения', () async {
-    final box = await Hive.openBox<Map>(HiveActiveWorkoutStore.boxName);
-    await box.put('current', {'title': 'Ноги', 'cursor': 'мусор'});
+  test(
+    'повреждённая идущая тренировка — null и очистка, без падения',
+    () async {
+      final box = await Hive.openBox<Map>(HiveActiveWorkoutStore.boxName);
+      await box.put('current', {'title': 'Ноги', 'cursor': 'мусор'});
 
-    final store = HiveActiveWorkoutStore(box);
+      final store = HiveActiveWorkoutStore(box);
 
-    expect(await store.load(), isNull);
-    expect(box.isEmpty, isTrue);
+      expect(await store.load(), isNull);
+      expect(box.isEmpty, isTrue);
+    },
+  );
+
+  test('избранное: переключение и перезапуск', () async {
+    final repo = await HiveFavoriteRepository.open();
+    await repo.toggle('local-1');
+    await repo.toggle('wger-7');
+    await repo.toggle('local-1');
+    await restart();
+
+    expect(await (await HiveFavoriteRepository.open()).all(), {'wger-7'});
   });
 }

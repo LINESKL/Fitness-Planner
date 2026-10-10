@@ -40,6 +40,26 @@ final customExerciseRepositoryProvider = Provider<CustomExerciseRepository>(
   (ref) => InMemoryCustomExerciseRepository(),
 );
 
+final favoriteRepositoryProvider = Provider<FavoriteRepository>(
+  (ref) => InMemoryFavoriteRepository(),
+);
+
+/// Id избранных упражнений.
+final favoritesProvider = AsyncNotifierProvider<FavoritesNotifier, Set<String>>(
+  FavoritesNotifier.new,
+);
+
+class FavoritesNotifier extends AsyncNotifier<Set<String>> {
+  @override
+  Future<Set<String>> build() => ref.watch(favoriteRepositoryProvider).all();
+
+  Future<void> toggle(String exerciseId) async {
+    await ref.read(favoriteRepositoryProvider).toggle(exerciseId);
+    ref.invalidateSelf();
+    await future;
+  }
+}
+
 final activeWorkoutStoreProvider = Provider<ActiveWorkoutStore>(
   (ref) => InMemoryActiveWorkoutStore(),
 );

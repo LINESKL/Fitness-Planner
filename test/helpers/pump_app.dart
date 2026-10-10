@@ -94,5 +94,8 @@ Future<Finder> scrollToText(WidgetTester tester, String text) async {
     find.byType(ListView).first,
     const Offset(0, -200),
   );
+  // dragUntilVisible останавливается, когда элемент лишь выглянул из-за края.
+  await tester.ensureVisible(finder.first);
+  await tester.pumpAndSettle();
   return finder;
 }

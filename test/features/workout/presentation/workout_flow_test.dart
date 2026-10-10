@@ -217,7 +217,8 @@ void main() {
   testWidgets('тренировку можно отменить без сохранения', (tester) async {
     await startUpperDay(tester);
     await done(tester);
-    final before = (await containerOf(tester).read(workoutsProvider.future)).length;
+    final before = (await containerOf(tester).read(workoutsProvider.future))
+        .length;
 
     await tester.tap(find.byTooltip('Ещё'));
     await tester.pumpAndSettle();
@@ -232,18 +233,19 @@ void main() {
     expect(find.text('Начать тренировку'), findsOneWidget);
   });
 
-  testWidgets('отдых и конец помещаются в альбомной ориентации с крупным шрифтом', (
-    tester,
-  ) async {
-    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await pumpApp(tester, restSeconds: 90, size: const Size(780, 360));
-    await tester.tap(find.text('Начать тренировку'));
-    await tester.pumpAndSettle();
-    await tester.tap(await scrollToText(tester, 'Готово'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'отдых и конец помещаются в альбомной ориентации с крупным шрифтом',
+    (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpApp(tester, restSeconds: 90, size: const Size(780, 360));
+      await tester.tap(find.text('Начать тренировку'));
+      await tester.pumpAndSettle();
+      await tester.tap(await scrollToText(tester, 'Готово'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('ОТДЫХ'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.text('ОТДЫХ'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
