@@ -38,14 +38,14 @@ void main() {
     );
   });
 
-  testWidgets('избранные — первыми в каталоге', (tester) async {
+  testWidgets('звёздочка не переставляет список под пальцем', (tester) async {
     await openCatalog(tester);
+    final before = tester.getTopLeft(find.text('Приседания')).dy;
+
     await tester.tap(star('Приседания'));
     await tester.pumpAndSettle();
 
-    final squat = tester.getTopLeft(find.text('Приседания'));
-    final bench = tester.getTopLeft(find.text('Жим лёжа'));
-    expect(squat.dy, lessThan(bench.dy));
+    expect(tester.getTopLeft(find.text('Приседания')).dy, before);
   });
 
   testWidgets('фильтр «Избранное» оставляет только избранные', (tester) async {

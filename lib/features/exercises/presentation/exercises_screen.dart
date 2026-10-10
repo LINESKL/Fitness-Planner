@@ -48,21 +48,16 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     );
   }
 
-  /// Поиск, фильтр «Избранное»; избранные — первыми.
-  List<Exercise> _filter(List<Exercise> items, Set<String> favorites) {
-    final found = [
-      for (final e in items)
-        if ((_query.isEmpty ||
-                e.name.toLowerCase().contains(_query) ||
-                e.muscleGroup.toLowerCase().contains(_query)) &&
-            (!_favoritesOnly || favorites.contains(e.id)))
-          e,
-    ];
-    return [
-      ...found.where((e) => favorites.contains(e.id)),
-      ...found.where((e) => !favorites.contains(e.id)),
-    ];
-  }
+  /// Поиск и фильтр «Избранное». Порядок не меняется: звёздочка
+  /// не должна переставлять строку под пальцем.
+  List<Exercise> _filter(List<Exercise> items, Set<String> favorites) => [
+    for (final e in items)
+      if ((_query.isEmpty ||
+              e.name.toLowerCase().contains(_query) ||
+              e.muscleGroup.toLowerCase().contains(_query)) &&
+          (!_favoritesOnly || favorites.contains(e.id)))
+        e,
+  ];
 
   Future<void> _create() async {
     final created = await context.pushNamed<Exercise>(
