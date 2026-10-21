@@ -115,6 +115,19 @@ void main() {
       verifyNever(() => auth.signInWithCredential(any()));
     });
 
+    test('сбой получения токена — AuthException «Не удалось войти»', () {
+      expect(
+        repo(token: () async => throw StateError('boom')).signInWithGoogle(),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'Не удалось войти',
+          ),
+        ),
+      );
+    });
+
     test('токен есть — signInWithCredential вызван один раз', () async {
       when(() => auth.signInWithCredential(any()))
           .thenAnswer((_) async => MockUserCredential());

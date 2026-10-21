@@ -103,6 +103,11 @@ class FirebaseAuthRepository implements AuthRepository {
       await action();
     } on FirebaseAuthException catch (e) {
       throw AuthException(authMessage(e.code));
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      // Любой другой сбой (например, Google) — общий текст.
+      throw AuthException(authMessage(''));
     }
   }
 
