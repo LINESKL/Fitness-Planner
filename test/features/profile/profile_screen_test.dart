@@ -229,6 +229,38 @@ void main() {
       expect(find.text('79 кг'), findsOneWidget);
       expect(find.textContaining('за месяц'), findsNothing);
     });
+
+    testWidgets(
+      'замеры в см — последние известные, даже если в свежем их нет',
+      (tester) async {
+        await open(
+          tester,
+          body: [
+            BodyEntry(
+              id: 'b1',
+              date: daysAgo(7),
+              weightKg: 80,
+              waistCm: 82,
+              chestCm: 100.5,
+            ),
+            BodyEntry(id: 'b2', date: daysAgo(0), weightKg: 79),
+          ],
+        );
+        expect(find.text('талия 82 см · грудь 100.5 см'), findsOneWidget);
+      },
+    );
+  });
+
+  testWidgets('плитки статистики не слипаются', (tester) async {
+    await open(tester);
+    final tiles = find.byWidgetPredicate(
+      (w) => w is Card && '${w.key}'.contains('stat-'),
+    );
+    final first = tester.getRect(tiles.at(0));
+    final second = tester.getRect(tiles.at(1));
+    final third = tester.getRect(tiles.at(2));
+    expect(second.left - first.right, greaterThanOrEqualTo(8));
+    expect(third.top - first.bottom, greaterThanOrEqualTo(8));
   });
 
   group('настройки', () {

@@ -249,8 +249,9 @@ class _StatsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var row = 0; row < tiles.length; row += 2)
+        for (var row = 0; row < tiles.length; row += 2) ...[
           Row(
+            spacing: 8,
             children: [
               for (final (label, value) in tiles.skip(row).take(2))
                 Expanded(
@@ -281,6 +282,8 @@ class _StatsSection extends StatelessWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 8),
+        ],
         Text(
           workouts.isEmpty
               ? 'Первая тренировка — впереди'
@@ -312,6 +315,9 @@ class _BodyCard extends StatelessWidget {
         ? null
         : entries.where((e) => !e.date.isAfter(monthAgo)).lastOrNull;
     final photo = entries.where((e) => e.photoPath != null).lastOrNull;
+    // Талию и грудь меряют реже веса — берём последние известные.
+    final waist = entries.where((e) => e.waistCm != null).lastOrNull?.waistCm;
+    final chest = entries.where((e) => e.chestCm != null).lastOrNull?.chestCm;
 
     return Card(
       child: Padding(
@@ -336,6 +342,14 @@ class _BodyCard extends StatelessWidget {
                       Text(
                         '${latest.weightKg < base.weightKg ? '−' : '+'}'
                         '${formatKg((latest.weightKg - base.weightKg).abs())} кг за месяц',
+                        style: muted,
+                      ),
+                    if (waist != null || chest != null)
+                      Text(
+                        [
+                          if (waist != null) 'талия ${formatKg(waist)} см',
+                          if (chest != null) 'грудь ${formatKg(chest)} см',
+                        ].join(' · '),
                         style: muted,
                       ),
                   ],
