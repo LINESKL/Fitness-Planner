@@ -17,6 +17,7 @@ import 'features/workout/data/hive/cached_exercise_repository.dart';
 import 'features/workout/data/hive/hive_repositories.dart';
 import 'features/workout/data/hive/legacy_logs.dart';
 import 'features/workout/data/hive/migration_v2.dart';
+import 'features/workout/data/cloud/cloud_sync.dart';
 import 'features/workout/data/remote_exercise_repository.dart';
 import 'features/workout/data/wger/wger_api.dart';
 import 'features/workout/presentation/workout_providers.dart';
@@ -69,6 +70,16 @@ Future<void> main() async {
           (ref) => syncedOr(ref, favorites, SyncedFavoriteRepository.new),
         ),
         firestoreProvider.overrideWithValue(FirebaseFirestore.instance),
+        localDataProvider.overrideWithValue(
+          LocalData(
+            workouts: workouts,
+            program: program,
+            body: body,
+            customExercises: customExercises,
+            notes: notes,
+            favorites: favorites,
+          ),
+        ),
         activeWorkoutStoreProvider.overrideWithValue(activeWorkout),
         initialActiveWorkoutProvider.overrideWithValue(restoredWorkout),
         exerciseRepositoryProvider.overrideWithValue(exercises),

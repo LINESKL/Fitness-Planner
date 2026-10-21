@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/domain/auth_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../program/presentation/program_providers.dart';
+import '../data/cloud/cloud_sync.dart';
 import '../data/cloud/user_cloud.dart';
 import '../data/in_memory_repositories.dart';
 import '../data/remote_exercise_repository.dart';
@@ -40,6 +42,31 @@ T syncedOr<T>(Ref ref, T local, T Function(T local, UserCloud cloud) wrap) {
   final cloud = ref.watch(userCloudProvider);
   return cloud == null ? local : wrap(local, cloud);
 }
+
+/// Локальные репозитории без облака; main подставляет Hive, в тестах null.
+final localDataProvider = Provider<LocalData?>((ref) => null);
+
+/// Переход в аккаунт (или смена аккаунта): слить облако с телефоном и
+/// перечитать данные. Без LocalData и облака ничего не делает.
+final cloudSyncProvider = Provider<void>((ref) {
+  ref.listen(authProvider, (prev, next) async {
+    if (next is! SignedIn) return;
+    if (prev is SignedIn && prev.uid == next.uid) return;
+    final local = ref.read(localDataProvider);
+    final cloud = ref.read(userCloudProvider);
+    if (local == null || cloud == null) return;
+    await CloudSync(local, cloud).merge();
+    if (!ref.mounted) return;
+    ref
+      ..invalidate(workoutsProvider)
+      ..invalidate(templatesProvider)
+      ..invalidate(programProvider)
+      ..invalidate(bodyEntriesProvider)
+      ..invalidate(customExercisesProvider)
+      ..invalidate(favoritesProvider)
+      ..invalidate(noteProvider);
+  });
+});
 
 // DI: реализации подставляются здесь, в тестах — через overrides.
 final workoutRepositoryProvider = Provider<WorkoutRepository>(

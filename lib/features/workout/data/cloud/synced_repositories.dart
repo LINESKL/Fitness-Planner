@@ -100,7 +100,7 @@ class SyncedNoteRepository implements NoteRepository {
       final ref = _cloud.collection('notes').doc(noteDocId(exercise));
       return text.trim().isEmpty
           ? ref.delete()
-          : ref.set({'exercise': exercise, 'text': text.trim()});
+          : ref.set(noteToCloudJson(exercise, text));
     });
   }
 }
@@ -169,7 +169,7 @@ class SyncedFavoriteRepository implements FavoriteRepository {
   @override
   Future<void> toggle(String exerciseId) async {
     await _local.toggle(exerciseId);
-    final ids = (await _local.all()).toList()..sort();
-    _fire(() => _cloud.meta('favorites').set({'ids': ids}));
+    final ids = await _local.all();
+    _fire(() => _cloud.meta('favorites').set(favoritesToCloudJson(ids)));
   }
 }
