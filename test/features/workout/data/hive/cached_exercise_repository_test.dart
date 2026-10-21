@@ -5,26 +5,18 @@ import 'package:fitness_planner/features/workout/domain/exercise.dart';
 import 'package:fitness_planner/features/workout/domain/exercise_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive_ce.dart';
+import 'package:mocktail/mocktail.dart';
 
-class FakeRemote implements ExerciseRepository {
-  Object response = const <Exercise>[];
-
-  @override
-  Future<ExerciseCatalog> fetchExercises() async {
-    final r = response;
-    if (r is Exception) throw r;
-    return (items: r as List<Exercise>, offline: false);
-  }
-}
+class MockRemote extends Mock implements ExerciseRepository {}
 
 void main() {
   late Directory dir;
-  late FakeRemote remote;
+  late MockRemote remote;
 
   setUp(() async {
     dir = await Directory.systemTemp.createTemp('hive_cache_test');
     Hive.init(dir.path);
-    remote = FakeRemote();
+    remote = MockRemote();
   });
 
   tearDown(() async {
@@ -40,22 +32,29 @@ void main() {
   );
   const offline = ExerciseLoadException('Нет подключения к интернету');
 
+  void online(List<Exercise> items) =>
+      when(() => remote.fetchExercises())
+          .thenAnswer((_) async => (items: items, offline: false));
+
+  void noNetwork() => when(() => remote.fetchExercises()).thenThrow(offline);
+
   test('сеть есть — свежий каталог, не офлайн', () async {
-    remote.response = [squat];
+    online([squat]);
     final repo = await CachedExerciseRepository.open(remote);
 
     final catalog = await repo.fetchExercises();
 
     expect(catalog.items.single.name, 'Squats');
     expect(catalog.offline, isFalse);
+    verify(() => remote.fetchExercises()).called(1);
   });
 
   test('сети нет — каталог из кэша с пометкой офлайн', () async {
-    remote.response = [squat];
+    online([squat]);
     await (await CachedExerciseRepository.open(remote)).fetchExercises();
     await Hive.close();
 
-    remote.response = offline;
+    noNetwork();
     final catalog = await (await CachedExerciseRepository.open(remote))
         .fetchExercises();
 
@@ -68,7 +67,7 @@ void main() {
   });
 
   test('сети нет и кэша нет — исходная ошибка', () async {
-    remote.response = offline;
+    noNetwork();
     final repo = await CachedExerciseRepository.open(remote);
 
     expect(repo.fetchExercises(), throwsA(same(offline)));

@@ -164,7 +164,22 @@ Cloud Messaging, Crashlytics), Google Maps, geolocator, wger API, OpenStreetMap 
 
 GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и pull request: `flutter pub get` →
 `dart format` → `flutter analyze` → `flutter test --coverage` → `flutter build apk --release`.
-APK и отчёт покрытия (`lcov.info`) публикуются как артефакты запуска.
+APK и отчёт покрытия (`lcov.info`) публикуются как артефакты запуска, процент покрытия — в сводке запуска.
+Integration-тест на Android-эмуляторе — отдельный job, запускается вручную (Actions → CI → Run workflow).
+
+## Тесты
+
+- Unit-тесты бизнес-логики: правила прогрессии, рекордов, статистики, модель идущей тренировки.
+- Репозитории и провайдеры с моками `mocktail` (`cached_exercise_repository_test.dart`, `workouts_notifier_test.dart`),
+  хранилища Hive — на временной папке.
+- Widget-тесты всех экранов и сценариев.
+- Integration-тест сквозного сценария (`integration_test/workout_flow_test.dart`): вход гостем → тренировка
+  по дню программы → итоги → тренировка в «Прогрессе».
+
+```bash
+flutter test --coverage                        # unit + widget, отчёт в coverage/lcov.info
+flutter test integration_test -d emulator-5554 # на эмуляторе или телефоне
+```
 
 ## Структура репозитория
 
