@@ -62,6 +62,9 @@ class InMemoryNoteRepository implements NoteRepository {
   Future<String?> note(String exercise) async => _notes[exercise];
 
   @override
+  Future<Map<String, String>> all() async => {..._notes};
+
+  @override
   Future<void> setNote(String exercise, String text) async =>
       text.trim().isEmpty
       ? _notes.remove(exercise)

@@ -85,6 +85,11 @@ class HiveNoteRepository implements NoteRepository {
   Future<String?> note(String exercise) async => _box.get(exercise);
 
   @override
+  Future<Map<String, String>> all() async => {
+    for (final k in _box.keys) k as String: _box.get(k)!,
+  };
+
+  @override
   Future<void> setNote(String exercise, String text) => text.trim().isEmpty
       ? _box.delete(exercise)
       : _box.put(exercise, text.trim());

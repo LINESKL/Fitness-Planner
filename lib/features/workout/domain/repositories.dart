@@ -25,6 +25,9 @@ abstract interface class ProgramRepository {
 abstract interface class NoteRepository {
   Future<String?> note(String exercise);
 
+  /// Все заметки: упражнение → текст.
+  Future<Map<String, String>> all();
+
   /// Пустой текст удаляет заметку.
   Future<void> setNote(String exercise, String text);
 }

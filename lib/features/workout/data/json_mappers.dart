@@ -103,6 +103,9 @@ Json bodyToJson(BodyEntry b) => {
   'photoPath': b.photoPath,
 };
 
+/// Замер для облака: фото остаётся только на телефоне.
+Json bodyToCloudJson(BodyEntry b) => bodyToJson(b)..remove('photoPath');
+
 BodyEntry bodyFromJson(Json j) => BodyEntry(
   id: j['id']! as String,
   date: DateTime.parse(j['date']! as String),

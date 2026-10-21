@@ -2,8 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/domain/auth_repository.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../data/cloud/user_cloud.dart';
 import '../data/in_memory_repositories.dart';
 import '../data/remote_exercise_repository.dart';
 import '../data/sample_data.dart';
@@ -19,6 +23,23 @@ import '../domain/set_entry.dart';
 import '../domain/repositories.dart';
 import '../domain/workout.dart';
 import '../domain/workout_async.dart';
+
+/// Firestore; main подставляет instance, в тестах null — облака нет.
+final firestoreProvider = Provider<FirebaseFirestore?>((ref) => null);
+
+/// Облако текущего пользователя; null — гость, не вошёл или нет Firestore.
+final userCloudProvider = Provider<UserCloud?>((ref) {
+  final auth = ref.watch(authProvider);
+  final firestore = ref.watch(firestoreProvider);
+  if (auth is! SignedIn || firestore == null) return null;
+  return UserCloud(firestore.collection('users').doc(auth.uid));
+});
+
+/// Локальный репозиторий, а при входе в аккаунт — обёртка с записью в облако.
+T syncedOr<T>(Ref ref, T local, T Function(T local, UserCloud cloud) wrap) {
+  final cloud = ref.watch(userCloudProvider);
+  return cloud == null ? local : wrap(local, cloud);
+}
 
 // DI: реализации подставляются здесь, в тестах — через overrides.
 final workoutRepositoryProvider = Provider<WorkoutRepository>(
