@@ -8,6 +8,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/exercises/presentation/custom_exercise_screen.dart';
 import '../features/exercises/presentation/exercise_details_screen.dart';
 import '../features/exercises/presentation/exercises_screen.dart';
+import '../features/gyms/presentation/gyms_map_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/program/presentation/program_screen.dart';
 import '../features/program/presentation/template_editor_screen.dart';
@@ -151,6 +152,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/profile',
                 name: 'profile',
                 builder: (_, _) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'gyms',
+                    name: 'gyms',
+                    parentNavigatorKey: rootKey,
+                    builder: (_, _) => const GymsMapScreen(),
+                  ),
+                ],
               ),
             ],
           ),
