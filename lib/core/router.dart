@@ -12,9 +12,9 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/program/presentation/program_screen.dart';
 import '../features/program/presentation/template_editor_screen.dart';
 import '../features/progress/presentation/body_entry_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
 import '../features/progress/presentation/workout_details_screen.dart';
-import '../features/settings/presentation/settings_screen.dart';
 import '../features/workout/presentation/active_workout_screen.dart';
 import '../features/workout/presentation/workout_plan_screen.dart';
 import '../features/workout/presentation/workout_summary_screen.dart';
@@ -68,14 +68,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/',
                 name: 'home',
                 builder: (_, _) => const HomeScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'settings',
-                    name: 'settings',
-                    parentNavigatorKey: rootKey,
-                    builder: (_, _) => const SettingsScreen(),
-                  ),
-                ],
               ),
             ],
           ),
@@ -150,6 +142,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                         ExerciseDetailsScreen(id: state.pathParameters['id']!),
                   ),
                 ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                name: 'profile',
+                builder: (_, _) => const ProfileScreen(),
               ),
             ],
           ),

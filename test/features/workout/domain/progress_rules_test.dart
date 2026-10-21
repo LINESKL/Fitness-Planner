@@ -182,6 +182,40 @@ void main() {
     });
   });
 
+  group('лучшая серия недель', () {
+    Workout on(int y, int m, int d) => workout(DateTime(y, m, d), {});
+
+    test('без тренировок — 0', () => expect(bestWeekStreak([]), 0));
+
+    test('одна неделя — 1', () {
+      expect(bestWeekStreak([on(2026, 10, 7)]), 1);
+    });
+
+    test('недели 1-3, пропуск, 5-6 — лучшая 3', () {
+      expect(
+        bestWeekStreak([
+          on(2026, 9, 1),
+          on(2026, 9, 8),
+          on(2026, 9, 15),
+          on(2026, 9, 29),
+          on(2026, 10, 6),
+        ]),
+        3,
+      );
+    });
+
+    test('две тренировки в одной неделе считаются один раз', () {
+      expect(bestWeekStreak([on(2026, 10, 5), on(2026, 10, 7)]), 1);
+    });
+
+    test('серия переходит через границу года', () {
+      expect(
+        bestWeekStreak([on(2026, 12, 23), on(2026, 12, 30), on(2027, 1, 6)]),
+        3,
+      );
+    });
+  });
+
   group('latestRecord', () {
     test('последний момент, когда 1ПМ упражнения превысил прежний', () {
       final r = latestRecord([

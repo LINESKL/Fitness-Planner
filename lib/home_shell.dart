@@ -26,6 +26,7 @@ class HomeShell extends StatelessWidget {
       selected: Icons.fitness_center,
       label: 'Упражнения',
     ),
+    (icon: Icons.person_outline, selected: Icons.person, label: 'Профиль'),
   ];
 
   /// С этой ширины (планшет, альбомная ориентация) — боковая панель.
@@ -39,31 +40,32 @@ class HomeShell extends StatelessWidget {
     final wide = MediaQuery.sizeOf(context).width >= wideBreakpoint;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_tabs[shell.currentIndex].label),
-        actions: [
-          IconButton(
-            tooltip: 'Настройки',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.pushNamed('settings'),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(_tabs[shell.currentIndex].label)),
       body: wide
           ? Row(
               children: [
-                NavigationRail(
-                  selectedIndex: shell.currentIndex,
-                  onDestinationSelected: _select,
-                  labelType: NavigationRailLabelType.all,
-                  destinations: [
-                    for (final tab in _tabs)
-                      NavigationRailDestination(
-                        icon: Icon(tab.icon),
-                        selectedIcon: Icon(tab.selected),
-                        label: Text(tab.label),
+                // Пять пунктов с крупным шрифтом не влезают в низкий экран — прокрутка.
+                LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: box.maxHeight),
+                      child: IntrinsicHeight(
+                        child: NavigationRail(
+                          selectedIndex: shell.currentIndex,
+                          onDestinationSelected: _select,
+                          labelType: NavigationRailLabelType.all,
+                          destinations: [
+                            for (final tab in _tabs)
+                              NavigationRailDestination(
+                                icon: Icon(tab.icon),
+                                selectedIcon: Icon(tab.selected),
+                                label: Text(tab.label),
+                              ),
+                          ],
+                        ),
                       ),
-                  ],
+                    ),
+                  ),
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(child: MaxWidth(child: shell)),

@@ -81,9 +81,9 @@ void main() {
 
   testWidgets('тема из настроек применяется к приложению', (tester) async {
     await pumpApp(tester);
-    await tester.tap(find.byTooltip('Настройки'));
+    await tester.tap(navItem('Профиль'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Светлая'));
+    await tester.tap(await scrollToText(tester, 'Светлая'));
     await tester.pumpAndSettle();
 
     final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
@@ -99,9 +99,9 @@ void main() {
       tester.element(find.byType(Scaffold).first),
     );
     expect(await early.read(bodyEntriesProvider.future), isEmpty);
-    await tester.tap(find.byTooltip('Настройки'));
+    await tester.tap(navItem('Профиль'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Загрузить пример'));
+    await tester.tap(await scrollToText(tester, 'Загрузить пример'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Загрузить'));
     await tester.pumpAndSettle();
@@ -116,7 +116,7 @@ void main() {
     expect(program.templateIds.length, 3);
     expect(find.text('Пример загружен'), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.tap(navItem('Сегодня'));
     await tester.pumpAndSettle();
     expect(find.text('Создайте программу'), findsNothing);
     expect(find.textContaining('ПО ПЛАНУ'), findsOneWidget);

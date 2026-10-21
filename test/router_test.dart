@@ -29,11 +29,11 @@ void main() {
     expect(find.text('Продолжить как гость'), findsOneWidget);
   });
 
-  testWidgets('выход из настроек возвращает на вход', (tester) async {
+  testWidgets('выход из профиля возвращает на вход', (tester) async {
     await pumpApp(tester);
-    await tester.tap(find.byTooltip('Настройки'));
+    await tester.tap(navItem('Профиль'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Войти в аккаунт'));
+    await tester.tap(await scrollToText(tester, 'Войти в аккаунт'));
     await tester.pumpAndSettle();
 
     await scrollToText(tester, 'Продолжить как гость');

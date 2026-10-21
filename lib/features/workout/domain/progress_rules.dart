@@ -133,6 +133,26 @@ int weekStreak(List<Workout> workouts, DateTime now) {
   return streak;
 }
 
+/// Самая длинная серия подряд идущих недель с тренировками за всё время.
+int bestWeekStreak(List<Workout> workouts) {
+  final weeks = {for (final w in workouts) weekStart(w.startedAt)};
+  var best = 0;
+  for (final week in weeks) {
+    final previous = DateTime(week.year, week.month, week.day - 7);
+    if (weeks.contains(previous)) continue; // не начало серии
+    var length = 0;
+    for (
+      var w = week;
+      weeks.contains(w);
+      w = DateTime(w.year, w.month, w.day + 7)
+    ) {
+      length++;
+    }
+    if (length > best) best = length;
+  }
+  return best;
+}
+
 typedef RecordEvent = ({String exercise, SetEntry set, DateTime date});
 
 /// Все рекорды по порядку: подход, чей 1ПМ превысил лучший прежний результат
