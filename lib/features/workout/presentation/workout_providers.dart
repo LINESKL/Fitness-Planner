@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/push_service.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../program/presentation/program_providers.dart';
@@ -61,6 +62,9 @@ class CloudSyncController {
 final cloudSyncProvider = Provider<CloudSyncController>((ref) {
   // Слияния идут по очереди: параллельные переплетались бы в записи на телефон.
   final controller = CloudSyncController();
+  final messaging = ref.read(pushMessagingProvider);
+  final push = messaging == null ? null : PushService(messaging);
+  if (push != null) ref.onDispose(push.stop);
 
   Future<void> run(String uid) async {
     bool current() {
@@ -74,6 +78,7 @@ final cloudSyncProvider = Provider<CloudSyncController>((ref) {
     if (local == null || cloud == null || !current()) return;
     await CloudSync(local, cloud, stillCurrent: current).merge();
     if (!current()) return;
+    unawaited(push?.start(cloud, showSnack));
     ref
       ..invalidate(workoutsProvider)
       ..invalidate(templatesProvider)
@@ -86,7 +91,10 @@ final cloudSyncProvider = Provider<CloudSyncController>((ref) {
 
   // fireImmediately: сохранённый сеанс при запуске тоже требует слияния.
   ref.listen(authProvider, fireImmediately: true, (prev, next) {
-    if (next is! SignedIn) return;
+    if (next is! SignedIn) {
+      unawaited(push?.stop());
+      return;
+    }
     if (prev is SignedIn && prev.uid == next.uid) return;
     controller.idle = controller.idle
         .then((_) => run(next.uid))

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' show WatchContext;
 
+import 'core/push_service.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'features/settings/presentation/settings_model.dart';
@@ -16,6 +17,7 @@ class FitnessPlannerApp extends ConsumerWidget {
       cloudSyncProvider,
     ); // слияние при входе живёт, пока живо приложение
     return MaterialApp.router(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'Fitness Planner',
       theme: lightTheme,
       darkTheme: darkTheme,

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart' show ChangeNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/push_service.dart';
 import 'firebase_options.dart';
 import 'features/auth/data/firebase_auth_repository.dart';
 import 'features/auth/presentation/auth_providers.dart';
@@ -69,6 +70,7 @@ Future<void> main() async {
         favoriteRepositoryProvider.overrideWith(
           (ref) => syncedOr(ref, favorites, SyncedFavoriteRepository.new),
         ),
+        pushMessagingProvider.overrideWithValue(FirebasePushMessaging()),
         firestoreProvider.overrideWithValue(FirebaseFirestore.instance),
         localDataProvider.overrideWithValue(
           LocalData(
