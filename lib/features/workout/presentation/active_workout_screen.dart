@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart' show ReadContext;
 
+import '../../../core/device_channel.dart';
 import '../../../core/format.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets/max_width.dart';
@@ -124,63 +125,110 @@ class ActiveWorkoutScreen extends ConsumerWidget {
     if (workout == null) return const Scaffold();
 
     final exerciseCount = workout.exercises.length;
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              workout.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 20),
-            ),
-            ElapsedText(
-              since: workout.startedAt,
-              suffix: exerciseCount == 0
-                  ? ''
-                  : ' · ${workout.cursor.exercise + 1}/$exerciseCount',
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'План тренировки',
-            icon: const Icon(Icons.format_list_bulleted),
-            onPressed: () => context.pushNamed('workoutPlan'),
-          ),
-          TextButton(
-            onPressed: () => _confirmFinish(context, ref),
-            child: const Text('Завершить'),
-          ),
-          PopupMenuButton<void>(
-            tooltip: 'Ещё',
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                onTap: () => _cancel(context, ref),
-                child: const Text('Отменить тренировку'),
+    return _KeepScreenOn(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                workout.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 20),
+              ),
+              ElapsedText(
+                since: workout.startedAt,
+                suffix: exerciseCount == 0
+                    ? ''
+                    : ' · ${workout.cursor.exercise + 1}/$exerciseCount',
               ),
             ],
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: MaxWidth(
-          width: 560,
-          child: switch (workout.phase) {
-            _ when exerciseCount == 0 => _EmptyView(
-              onAdd: () => addExercise(context, ref),
+          actions: [
+            IconButton(
+              tooltip: 'План тренировки',
+              icon: const Icon(Icons.format_list_bulleted),
+              onPressed: () => context.pushNamed('workoutPlan'),
             ),
-            WorkoutPhase.set => _SetView(workout: workout),
-            WorkoutPhase.rest => _RestView(workout: workout),
-            WorkoutPhase.finished => _FinishedView(
-              onFinish: () => _finish(context, ref),
+            TextButton(
+              onPressed: () => _confirmFinish(context, ref),
+              child: const Text('Завершить'),
             ),
-          },
+            PopupMenuButton<void>(
+              tooltip: 'Ещё',
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  onTap: () => _cancel(context, ref),
+                  child: const Text('Отменить тренировку'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: MaxWidth(
+            width: 560,
+            child: switch (workout.phase) {
+              _ when exerciseCount == 0 => _EmptyView(
+                onAdd: () => addExercise(context, ref),
+              ),
+              WorkoutPhase.set => _SetView(workout: workout),
+              WorkoutPhase.rest => _RestView(workout: workout),
+              WorkoutPhase.finished => _FinishedView(
+                onFinish: () => _finish(context, ref),
+              ),
+            },
+          ),
         ),
       ),
     );
   }
+}
+
+/// Пока идёт тренировка, экран не гаснет (Platform Channel → Kotlin).
+/// Раз так — при слабой батарее стоит предупредить.
+class _KeepScreenOn extends ConsumerStatefulWidget {
+  const _KeepScreenOn({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_KeepScreenOn> createState() => _KeepScreenOnState();
+}
+
+class _KeepScreenOnState extends ConsumerState<_KeepScreenOn> {
+  static const _lowBattery = 15;
+
+  late final DeviceChannel _device = ref.read(deviceChannelProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _device.keepScreenOn(true);
+    _warnIfLow();
+  }
+
+  Future<void> _warnIfLow() async {
+    final level = await _device.batteryLevel();
+    if (level == null || level >= _lowBattery || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Заряд $level% — экран не будет гаснуть, подключите зарядку',
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _device.keepScreenOn(false);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _EmptyView extends StatelessWidget {

@@ -100,6 +100,7 @@ Json bodyToJson(BodyEntry b) => {
   'weightKg': b.weightKg,
   'waistCm': b.waistCm,
   'chestCm': b.chestCm,
+  'photoPath': b.photoPath,
 };
 
 BodyEntry bodyFromJson(Json j) => BodyEntry(
@@ -108,6 +109,7 @@ BodyEntry bodyFromJson(Json j) => BodyEntry(
   weightKg: _double(j['weightKg'])!,
   waistCm: _double(j['waistCm']),
   chestCm: _double(j['chestCm']),
+  photoPath: j['photoPath'] as String?,
 );
 
 Json exerciseToJson(Exercise e) => {

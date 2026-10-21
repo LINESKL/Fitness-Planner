@@ -160,6 +160,18 @@ GoRouter (`lib/core/router.dart`), у всех маршрутов есть им�
 Flutter, Dart, Material 3, Riverpod, GoRouter, dio, Hive, SharedPreferences, Firebase (Auth, Firestore,
 Cloud Messaging, Crashlytics), Google Maps, geolocator, wger API, OpenStreetMap Overpass API, GitHub Actions.
 
+## Нативные функции
+
+- **Камера** — фото прогресса к замеру тела (`image_picker`): снимок с камеры или из галереи копируется в папку
+  приложения (`path_provider`), в списке замеров — миниатюра, по нажатию — на весь экран с увеличением.
+  Удалили замер — удаляется и файл. Камера недоступна — сообщение, замер сохраняется без фото.
+- **Свой Platform Channel** `kz.aliar.fitness_planner/device` — Kotlin в
+  `android/app/src/main/kotlin/kz/aliar/fitness_planner/MainActivity.kt`, Dart в `lib/core/device_channel.dart`:
+  - `keepScreenOn(bool)` — во время тренировки экран не гаснет между подходами (`FLAG_KEEP_SCREEN_ON`);
+  - `batteryLevel()` — заряд из `BatteryManager`; меньше 15% при старте тренировки — предупреждение.
+  На iOS нативной стороны нет — методы тихо ничего не делают.
+- Проверка на устройстве: `flutter test integration_test/device_channel_test.dart` — ответ приходит из Kotlin.
+
 ## Производительность
 
 - Каталог wger грузится страницами по 50 (`limit/offset`) с бесконечной прокруткой: когда последняя строка

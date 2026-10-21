@@ -6,6 +6,7 @@ class BodyEntry {
     required this.weightKg,
     this.waistCm,
     this.chestCm,
+    this.photoPath,
   });
 
   final String id;
@@ -13,4 +14,7 @@ class BodyEntry {
   final double weightKg;
   final double? waistCm;
   final double? chestCm;
+
+  /// Фото прогресса — файл в папке приложения.
+  final String? photoPath;
 }

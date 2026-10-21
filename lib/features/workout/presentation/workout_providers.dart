@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -352,8 +353,17 @@ class BodyEntriesNotifier extends AsyncNotifier<List<BodyEntry>> {
     await future;
   }
 
+  /// Вместе с замером удаляется и его фото.
   Future<void> delete(String id) async {
+    final photo = state.value?.where((e) => e.id == id).firstOrNull?.photoPath;
     await ref.read(bodyRepositoryProvider).delete(id);
+    if (photo != null) {
+      try {
+        await File(photo).delete();
+      } on FileSystemException {
+        // Файла уже нет — удалять нечего.
+      }
+    }
     ref.invalidateSelf();
     await future;
   }

@@ -82,6 +82,7 @@ void main() {
       weightKg: 78.4,
       waistCm: 80,
       chestCm: 101.5,
+      photoPath: '/data/body-b1.jpg',
     );
     final light = BodyEntry(
       id: 'b2',
@@ -94,6 +95,7 @@ void main() {
 
     expect((a.weightKg, a.waistCm, a.chestCm), (78.4, 80.0, 101.5));
     expect((b.weightKg, b.waistCm, b.chestCm), (78.0, null, null));
+    expect((a.photoPath, b.photoPath), ('/data/body-b1.jpg', null));
   });
 
   test('упражнение', () {

@@ -1,3 +1,4 @@
+import 'package:fitness_planner/core/device_channel.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
@@ -27,7 +28,54 @@ Future<void> done(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+class FakeDeviceChannel implements DeviceChannel {
+  FakeDeviceChannel({this.battery});
+
+  final int? battery;
+  final screenOn = <bool>[];
+
+  @override
+  Future<int?> batteryLevel() async => battery;
+
+  @override
+  Future<void> keepScreenOn(bool on) async => screenOn.add(on);
+}
+
 void main() {
+  testWidgets('во время тренировки экран не гаснет, после — снова может', (
+    tester,
+  ) async {
+    final device = FakeDeviceChannel(battery: 80);
+    await startUpperDay(
+      tester,
+      overrides: [deviceChannelProvider.overrideWithValue(device)],
+    );
+    expect(device.screenOn, [true]);
+    expect(find.textContaining('Заряд'), findsNothing);
+
+    for (var i = 0; i < 6; i++) {
+      await done(tester);
+    }
+    await tester.tap(find.text('Завершить тренировку'));
+    await tester.pumpAndSettle();
+
+    expect(device.screenOn, [true, false]);
+  });
+
+  testWidgets('заряд меньше 15% — предупреждение при старте', (tester) async {
+    await startUpperDay(
+      tester,
+      overrides: [
+        deviceChannelProvider.overrideWithValue(FakeDeviceChannel(battery: 9)),
+      ],
+    );
+
+    expect(
+      find.text('Заряд 9% — экран не будет гаснуть, подключите зарядку'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('экран подхода: упражнение, номер подхода, прошлый раз', (
     tester,
   ) async {

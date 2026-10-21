@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,6 +40,27 @@ class BodyTab extends ConsumerWidget {
       await ref.read(bodyEntriesProvider.notifier).delete(e.id);
     }
   }
+
+  /// Фото на весь экран, с увеличением пальцами.
+  void _showPhoto(BuildContext context, String photo) => showDialog<void>(
+    context: context,
+    builder: (context) => Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: Stack(
+        children: [
+          Center(child: InteractiveViewer(child: Image.file(File(photo)))),
+          SafeArea(
+            child: IconButton(
+              tooltip: 'Закрыть',
+              color: Colors.white,
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,6 +104,25 @@ class BodyTab extends ConsumerWidget {
           Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
+              leading: switch (e.photoPath) {
+                final photo? => ClipRRect(
+                  key: ValueKey('photo-${e.id}'),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(photo),
+                    width: 48,
+                    height: 48,
+                    cacheWidth: 144,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        const Icon(Icons.broken_image_outlined),
+                  ),
+                ),
+                null => null,
+              },
+              onTap: e.photoPath == null
+                  ? null
+                  : () => _showPhoto(context, e.photoPath!),
               title: Text(
                 '${formatKg(e.weightKg)} кг',
                 style: const TextStyle(fontFeatures: tabularFigures),

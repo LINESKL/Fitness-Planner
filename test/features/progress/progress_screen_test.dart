@@ -1,3 +1,4 @@
+import 'package:fitness_planner/features/progress/data/photo_picker.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
 import 'package:fitness_planner/features/workout/domain/body.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
@@ -6,6 +7,8 @@ import 'package:fitness_planner/features/workout/presentation/workout_providers.
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:image_picker/image_picker.dart' show ImageSource;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/pump_app.dart';
@@ -36,6 +39,7 @@ Future<InMemoryBodyRepository> openProgress(
   WidgetTester tester, {
   List<Workout> workouts = const [],
   List<BodyEntry> body = const [],
+  List<Override> overrides = const [],
 }) async {
   final bodyRepo = InMemoryBodyRepository();
   for (final b in body) {
@@ -48,6 +52,7 @@ Future<InMemoryBodyRepository> openProgress(
         InMemoryWorkoutRepository(workouts),
       ),
       bodyRepositoryProvider.overrideWithValue(bodyRepo),
+      ...overrides,
     ],
   );
   await tester.tap(navItem('Прогресс'));
@@ -189,6 +194,57 @@ void main() {
     expect((await repo.all()).length, 2);
   });
 
+  testWidgets('тело: фото к замеру — с камеры, миниатюра в списке', (
+    tester,
+  ) async {
+    final picker = FakePhotoPicker();
+    final repo = await openProgress(
+      tester,
+      overrides: [photoPickerProvider.overrideWithValue(picker)],
+    );
+    await tester.tap(find.text('Тело'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Замер'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'Вес, кг'), '78');
+    await tester.tap(find.text('Камера'));
+    await tester.pumpAndSettle();
+    expect(picker.sources, [ImageSource.camera]);
+    expect(find.byTooltip('Убрать фото'), findsOneWidget);
+
+    await tester.tap(find.text('Сохранить'));
+    await tester.pumpAndSettle();
+
+    final saved = (await repo.all()).single;
+    expect(saved.photoPath, '/photos/body-${saved.id}.jpg');
+    expect(find.byKey(ValueKey('photo-${saved.id}')), findsOneWidget);
+  });
+
+  testWidgets('тело: камера недоступна — сообщение, замер без фото', (
+    tester,
+  ) async {
+    final repo = await openProgress(
+      tester,
+      overrides: [
+        photoPickerProvider.overrideWithValue(FakePhotoPicker(fails: true)),
+      ],
+    );
+    await tester.tap(find.text('Тело'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Замер'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Камера'));
+    await tester.pumpAndSettle();
+    expect(find.text('Не удалось открыть камеру'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Вес, кг'), '78');
+    await tester.tap(find.text('Сохранить'));
+    await tester.pumpAndSettle();
+    expect((await repo.all()).single.photoPath, isNull);
+  });
+
   testWidgets('рекорд упражнения со своим весом — «свой вес × N»', (
     tester,
   ) async {
@@ -207,4 +263,18 @@ void main() {
     expect(find.text('свой вес × 10'), findsOneWidget);
     expect(find.textContaining('1ПМ'), findsNothing);
   });
+}
+
+class FakePhotoPicker implements PhotoPicker {
+  FakePhotoPicker({this.fails = false});
+
+  final bool fails;
+  final sources = <ImageSource>[];
+
+  @override
+  Future<String?> pick(ImageSource source, String id) async {
+    sources.add(source);
+    if (fails) throw const PhotoPickException();
+    return '/photos/body-$id.jpg';
+  }
 }
