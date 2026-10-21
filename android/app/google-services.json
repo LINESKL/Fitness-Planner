@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "742800135927",
+    "project_id": "fitness-planner-22869",
+    "storage_bucket": "fitness-planner-22869.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742800135927:android:0e29462a54f8a98e0465f2",
+        "android_client_info": {
+          "package_name": "kz.aliar.fitness_planner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "742800135927-hasuq0chsqs4fpm5bdfuam0j8hjptg5p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kz.aliar.fitness_planner",
+            "certificate_hash": "fbd4538470b45a0b26968cf4b530f4473cde103e"
+          }
+        },
+        {
+          "client_id": "742800135927-k31v5lqp04aikop1avev49d0r0kqe5vi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWiPjb0ZnxVoKv3aI7vYsBqhg0GhVZBGg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "742800135927-k31v5lqp04aikop1avev49d0r0kqe5vi.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "742800135927-rhmcc0enk068887r71pt73a21m4s2gro.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "kz.aliar.fitnessPlanner"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
