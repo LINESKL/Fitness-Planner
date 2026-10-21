@@ -33,7 +33,7 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.byTooltip('Настройки'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Выйти'));
+    await tester.tap(find.text('Войти в аккаунт'));
     await tester.pumpAndSettle();
 
     await scrollToText(tester, 'Продолжить как гость');

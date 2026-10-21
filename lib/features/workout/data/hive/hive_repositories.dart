@@ -188,3 +188,20 @@ class HiveFavoriteRepository implements FavoriteRepository {
       ? _box.delete(exerciseId)
       : _box.put(exerciseId, true);
 }
+
+/// Выход из аккаунта: убрать с телефона всё, что живёт в облаке.
+/// Активная тренировка и кэш упражнений остаются — они не синхронизируются.
+Future<void> clearSyncedBoxes() async {
+  // Hive требует тип значений, с которым ящик открыт.
+  for (final name in [
+    HiveWorkoutRepository.boxName,
+    HiveProgramRepository.templatesBox,
+    HiveProgramRepository.programBox,
+    HiveBodyRepository.boxName,
+    HiveCustomExerciseRepository.boxName,
+  ]) {
+    await Hive.box<Map>(name).clear();
+  }
+  await Hive.box<String>(HiveNoteRepository.boxName).clear();
+  await Hive.box<bool>(HiveFavoriteRepository.boxName).clear();
+}

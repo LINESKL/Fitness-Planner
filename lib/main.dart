@@ -80,6 +80,7 @@ Future<void> main() async {
             favorites: favorites,
           ),
         ),
+        localDataWiperProvider.overrideWithValue(clearSyncedBoxes),
         activeWorkoutStoreProvider.overrideWithValue(activeWorkout),
         initialActiveWorkoutProvider.overrideWithValue(restoredWorkout),
         exerciseRepositoryProvider.overrideWithValue(exercises),

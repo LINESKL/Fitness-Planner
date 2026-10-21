@@ -1,5 +1,6 @@
 import 'package:fitness_planner/app.dart';
 import 'package:fitness_planner/features/auth/data/local_auth_repository.dart';
+import 'package:fitness_planner/features/auth/domain/auth_repository.dart';
 import 'package:fitness_planner/features/auth/presentation/auth_providers.dart';
 import 'package:fitness_planner/features/settings/presentation/settings_model.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
@@ -46,6 +47,7 @@ Future<void> pumpApp(
   List<WorkoutTemplate> templates = testTemplates,
   List<Override> overrides = const [],
   int restSeconds = 0,
+  AuthRepository? auth,
 }) async {
   if (size != null) {
     tester.view.physicalSize = size;
@@ -63,7 +65,9 @@ Future<void> pumpApp(
         exerciseRepositoryProvider.overrideWithValue(
           const LocalExerciseRepository(),
         ),
-        authRepositoryProvider.overrideWithValue(LocalAuthRepository(prefs)),
+        authRepositoryProvider.overrideWithValue(
+          auth ?? LocalAuthRepository(prefs),
+        ),
         programRepositoryProvider.overrideWithValue(
           InMemoryProgramRepository(
             templates: templates,

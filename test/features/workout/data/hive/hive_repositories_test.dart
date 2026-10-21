@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:fitness_planner/features/workout/data/hive/cached_exercise_repository.dart';
 import 'package:fitness_planner/features/workout/data/hive/hive_repositories.dart';
 import 'package:fitness_planner/features/workout/domain/active_workout.dart';
 import 'package:fitness_planner/features/workout/domain/body.dart';
@@ -160,4 +161,45 @@ void main() {
 
     expect(await (await HiveFavoriteRepository.open()).all(), {'wger-7'});
   });
+
+  test(
+    'clearSyncedBoxes чистит синхронизируемое, но не активную тренировку',
+    () async {
+      final workouts = await HiveWorkoutRepository.open();
+      final program = await HiveProgramRepository.open();
+      final notes = await HiveNoteRepository.open();
+      final body = await HiveBodyRepository.open();
+      final custom = await HiveCustomExerciseRepository.open();
+      final favorites = await HiveFavoriteRepository.open();
+      final active = await Hive.openBox<Map>(HiveActiveWorkoutStore.boxName);
+      final cache = await Hive.openBox<String>(
+        CachedExerciseRepository.boxName,
+      );
+      await workouts.save(workout('a', 1));
+      await program.saveTemplate(
+        const WorkoutTemplate(id: 't', name: 'Т', exercises: []),
+      );
+      await program.saveProgram(const Program(templateIds: ['t']));
+      await notes.setNote('Жим', 'заметка');
+      await favorites.toggle('x');
+      await active.put('current', {'k': 1});
+      await cache.put('k', 'v');
+      await Hive.box<Map>(HiveBodyRepository.boxName).put('b', {'k': 1});
+      await Hive.box<Map>(HiveCustomExerciseRepository.boxName).put('c', {});
+
+      await clearSyncedBoxes();
+
+      expect(await workouts.all(), isEmpty);
+      expect(await program.templates(), isEmpty);
+      expect((await program.program()).templateIds, isEmpty);
+      expect(await notes.all(), isEmpty);
+      expect(await favorites.all(), isEmpty);
+      expect(Hive.box<Map>(HiveBodyRepository.boxName), isEmpty);
+      expect(Hive.box<Map>(HiveCustomExerciseRepository.boxName), isEmpty);
+      expect(active, isNotEmpty);
+      expect(cache, isNotEmpty);
+      expect(body, isNotNull);
+      expect(custom, isNotNull);
+    },
+  );
 }

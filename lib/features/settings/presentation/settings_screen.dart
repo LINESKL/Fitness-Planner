@@ -4,6 +4,7 @@ import 'package:provider/provider.dart' show WatchContext;
 
 import '../../../core/format.dart';
 import '../../../core/widgets/max_width.dart';
+import '../../auth/domain/auth_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../program/presentation/program_providers.dart';
 import '../../workout/data/demo_data.dart';
@@ -51,8 +52,32 @@ class SettingsScreen extends ConsumerWidget {
     messenger.showSnackBar(const SnackBar(content: Text('Пример загружен')));
   }
 
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Выйти из аккаунта?'),
+        content: const Text(
+          'Данные останутся в облаке и будут удалены с этого телефона',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Выйти'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await ref.read(signOutAndWipeProvider)();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
     final settings = context.watch<SettingsModel>();
     final title = Theme.of(context).textTheme.titleMedium;
 
@@ -105,11 +130,22 @@ class SettingsScreen extends ConsumerWidget {
               label: const Text('Загрузить пример'),
             ),
             const SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: ref.read(authProvider.notifier).signOut,
-              icon: const Icon(Icons.logout),
-              label: const Text('Выйти'),
-            ),
+            if (auth is SignedIn) ...[
+              if (auth.email != null) ...[
+                Text('Аккаунт: ${auth.email}', style: title),
+                const SizedBox(height: 8),
+              ],
+              OutlinedButton.icon(
+                onPressed: () => _signOut(context, ref),
+                icon: const Icon(Icons.logout),
+                label: const Text('Выйти'),
+              ),
+            ] else
+              OutlinedButton.icon(
+                onPressed: ref.read(authProvider.notifier).signOut,
+                icon: const Icon(Icons.login),
+                label: const Text('Войти в аккаунт'),
+              ),
           ],
         ),
       ),

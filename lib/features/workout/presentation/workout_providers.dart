@@ -46,11 +46,21 @@ T syncedOr<T>(Ref ref, T local, T Function(T local, UserCloud cloud) wrap) {
 /// Локальные репозитории без облака; main подставляет Hive, в тестах null.
 final localDataProvider = Provider<LocalData?>((ref) => null);
 
+/// Очищает данные, которые живут в облаке; main подставляет очистку Hive.
+final localDataWiperProvider = Provider<Future<void> Function()>(
+  (ref) => () async {},
+);
+
+/// Очередь слияний: [idle] завершается, когда все начатые слияния закончены.
+class CloudSyncController {
+  Future<void> idle = Future<void>.value();
+}
+
 /// Переход в аккаунт (или смена аккаунта): слить облако с телефоном и
 /// перечитать данные. Без LocalData и облака ничего не делает.
-final cloudSyncProvider = Provider<void>((ref) {
+final cloudSyncProvider = Provider<CloudSyncController>((ref) {
   // Слияния идут по очереди: параллельные переплетались бы в записи на телефон.
-  var queue = Future<void>.value();
+  final controller = CloudSyncController();
 
   Future<void> run(String uid) async {
     bool current() {
@@ -78,9 +88,32 @@ final cloudSyncProvider = Provider<void>((ref) {
   ref.listen(authProvider, fireImmediately: true, (prev, next) {
     if (next is! SignedIn) return;
     if (prev is SignedIn && prev.uid == next.uid) return;
-    queue = queue.then((_) => run(next.uid)).catchError((Object _) {});
+    controller.idle = controller.idle
+        .then((_) => run(next.uid))
+        .catchError((Object _) {});
   });
+  return controller;
 });
+
+/// Выход с очисткой телефона. Сначала выход — идущее слияние увидит смену
+/// пользователя и прервётся; потом ждём его конец и только тогда стираем.
+final signOutAndWipeProvider = Provider<Future<void> Function()>(
+  (ref) => () async {
+    await ref.read(authProvider.notifier).signOut();
+    // Смена состояния доходит до authProvider по потоку, на следующем витке.
+    await Future<void>.delayed(Duration.zero);
+    await ref.read(cloudSyncProvider).idle;
+    await ref.read(localDataWiperProvider)();
+    ref
+      ..invalidate(workoutsProvider)
+      ..invalidate(templatesProvider)
+      ..invalidate(programProvider)
+      ..invalidate(bodyEntriesProvider)
+      ..invalidate(customExercisesProvider)
+      ..invalidate(favoritesProvider)
+      ..invalidate(noteProvider);
+  },
+);
 
 // DI: реализации подставляются здесь, в тестах — через overrides.
 final workoutRepositoryProvider = Provider<WorkoutRepository>(
