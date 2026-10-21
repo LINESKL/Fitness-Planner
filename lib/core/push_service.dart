@@ -54,33 +54,47 @@ class PushService {
   final PushMessaging messaging;
   final _subs = <StreamSubscription<Object?>>[];
 
+  /// Поколение: stop() и новый start() делают чужие незавершённые start устаревшими.
+  var _gen = 0;
+
   Future<void> start(UserCloud cloud, void Function(String text) show) async {
-    await stop();
+    final cancelled = stop();
+    final gen = _gen;
+    await cancelled;
+    bool stale() => gen != _gen;
     try {
-      if (!await messaging.requestPermission()) return;
+      final granted = await messaging.requestPermission();
+      if (!granted || stale()) return;
       Future<void> save(String? token) async {
-        if (token == null) return;
+        if (token == null || stale()) return;
         try {
           await cloud.user.set({
             'fcmToken': token,
             'tokenUpdatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('push: токен не сохранён: $e');
+        }
       }
 
       _subs
-        ..add(messaging.tokenRefresh().listen(save, onError: (Object _) {}))
+        ..add(messaging.tokenRefresh().listen(save, onError: _log))
         ..add(
           messaging.foreground().listen((m) {
             final text = [m.title, m.body].whereType<String>().join(' — ');
             if (text.isNotEmpty) show(text);
-          }, onError: (Object _) {}),
+          }, onError: _log),
         );
       await save(await messaging.token());
-    } catch (_) {}
+    } catch (e) {
+      _log(e);
+    }
   }
 
+  static void _log(Object e) => debugPrint('push: $e');
+
   Future<void> stop() async {
+    _gen++;
     final old = List.of(_subs);
     _subs.clear();
     for (final s in old) {

@@ -91,11 +91,10 @@ final cloudSyncProvider = Provider<CloudSyncController>((ref) {
 
   // fireImmediately: сохранённый сеанс при запуске тоже требует слияния.
   ref.listen(authProvider, fireImmediately: true, (prev, next) {
-    if (next is! SignedIn) {
-      unawaited(push?.stop());
-      return;
-    }
-    if (prev is SignedIn && prev.uid == next.uid) return;
+    if (prev is SignedIn && next is SignedIn && prev.uid == next.uid) return;
+    // Выход или смена аккаунта: подписки прежнего пользователя больше не нужны.
+    unawaited(push?.stop());
+    if (next is! SignedIn) return;
     controller.idle = controller.idle
         .then((_) => run(next.uid))
         .catchError((Object _) {});
