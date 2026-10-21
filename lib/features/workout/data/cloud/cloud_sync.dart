@@ -28,10 +28,19 @@ class LocalData {
 /// Разовое слияние при входе: облако побеждает по id, чего нет в облаке —
 /// загружается. Запись идёт в локальные репозитории напрямую, не через обёртки.
 class CloudSync {
-  CloudSync(this.local, this.cloud);
+  CloudSync(this.local, this.cloud, {this.stillCurrent = _always});
 
   final LocalData local;
   final UserCloud cloud;
+
+  /// Пока false — аккаунт сменился (выход), и в локальные данные писать нельзя.
+  final bool Function() stillCurrent;
+
+  static bool _always() => true;
+
+  void _check() {
+    if (!stillCurrent()) throw const _Aborted();
+  }
 
   /// Сбой одного раздела (нет сети, правила) не мешает остальным и не роняет.
   Future<void> merge() async {
@@ -44,8 +53,11 @@ class CloudSync {
       _notes,
       _favorites,
     ]) {
+      if (!stillCurrent()) return;
       try {
         await step();
+      } on _Aborted {
+        return;
       } on Object {
         // Локальные данные остаются как есть.
       }
@@ -67,6 +79,7 @@ class CloudSync {
   }) async {
     final remote = await _cloudDocs(name);
     for (final json in remote.values) {
+      _check();
       await saveFromCloud(json);
     }
     for (final item in localItems.where((i) => !remote.containsKey(id(i)))) {
@@ -94,6 +107,7 @@ class CloudSync {
   Future<void> _program() async {
     final remote = await cloud.meta('program').get();
     if (remote.exists) {
+      _check();
       await local.program.saveProgram(programFromJson(remote.data()!));
     } else {
       await cloud
@@ -141,6 +155,7 @@ class CloudSync {
         j['exercise'] as String: j['text'] as String,
     };
     for (final e in cloudNotes.entries) {
+      _check();
       await local.notes.setNote(e.key, e.value);
     }
     for (final e in (await local.notes.all()).entries) {
@@ -158,6 +173,7 @@ class CloudSync {
     final cloudIds = {...?(remote.data()?['ids'] as List?)?.cast<String>()};
     final localIds = await local.favorites.all();
     for (final id in cloudIds.difference(localIds)) {
+      _check();
       await local.favorites.toggle(id);
     }
     final union = {...cloudIds, ...localIds};
@@ -165,4 +181,8 @@ class CloudSync {
       await cloud.meta('favorites').set(favoritesToCloudJson(union));
     }
   }
+}
+
+class _Aborted implements Exception {
+  const _Aborted();
 }

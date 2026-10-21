@@ -24,9 +24,11 @@ Workout _w(String id, String title) => Workout(
 );
 
 class _Auth implements AuthRepository {
+  _Auth([this.current = const Guest()]);
+
   final controller = StreamController<AuthState>();
   @override
-  AuthState get current => const Guest();
+  final AuthState current;
   @override
   Stream<AuthState> changes() => controller.stream;
   @override
@@ -172,6 +174,76 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect((await workouts.all()).single.id, 'w1');
   });
+
+  ProviderContainer containerFor(_Auth auth, LocalData data) {
+    final container = ProviderContainer.test(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(auth),
+        firestoreProvider.overrideWithValue(fs),
+        localDataProvider.overrideWithValue(data),
+      ],
+    );
+    container.listen(cloudSyncProvider, (_, _) {});
+    container.read(authProvider);
+    return container;
+  }
+
+  test(
+    'cloudSyncProvider: сохранённый сеанс при запуске тоже сливается',
+    () async {
+      await cloud
+          .collection('workouts')
+          .doc('w1')
+          .set(workoutToJson(_w('w1', 'A')));
+      containerFor(_Auth(const SignedIn(uid: 'u1')), local);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect((await workouts.all()).single.id, 'w1');
+    },
+  );
+
+  test(
+    'cloudSyncProvider: быстрые входы идут по очереди, избранное не мигает',
+    () async {
+      await cloud.meta('favorites').set({
+        'ids': ['a'],
+      });
+      final auth = _Auth();
+      containerFor(auth, local);
+      auth.controller
+        ..add(const SignedIn(uid: 'u1'))
+        ..add(const Guest())
+        ..add(const SignedIn(uid: 'u1'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(await favorites.all(), {'a'});
+    },
+  );
+
+  test(
+    'cloudSyncProvider: выход посреди слияния — остальное не пишется',
+    () async {
+      await cloud
+          .collection('workouts')
+          .doc('w1')
+          .set(workoutToJson(_w('w1', 'A')));
+      await cloud.collection('notes').doc('Жим').set({
+        'exercise': 'Жим',
+        'text': 'облако',
+      });
+      final auth = _Auth();
+      final leaving = LocalData(
+        workouts: _LeavingWorkouts(auth),
+        program: program,
+        body: body,
+        customExercises: InMemoryCustomExerciseRepository(),
+        notes: notes,
+        favorites: favorites,
+      );
+      containerFor(auth, leaving);
+      auth.controller.add(const SignedIn(uid: 'u1'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(await notes.all(), isEmpty);
+    },
+  );
 }
 
 class _BrokenCloud extends UserCloud {
@@ -182,4 +254,16 @@ class _BrokenCloud extends UserCloud {
   @override
   DocumentReference<Map<String, dynamic>> meta(String name) =>
       throw StateError('облако недоступно');
+}
+
+/// После первой записи тренировки пользователь выходит из аккаунта.
+class _LeavingWorkouts extends InMemoryWorkoutRepository {
+  _LeavingWorkouts(this.auth);
+  final _Auth auth;
+  @override
+  Future<void> save(Workout workout) async {
+    await super.save(workout);
+    auth.controller.add(const Guest());
+    await Future<void>.delayed(Duration.zero);
+  }
 }

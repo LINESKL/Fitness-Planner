@@ -49,14 +49,21 @@ final localDataProvider = Provider<LocalData?>((ref) => null);
 /// Переход в аккаунт (или смена аккаунта): слить облако с телефоном и
 /// перечитать данные. Без LocalData и облака ничего не делает.
 final cloudSyncProvider = Provider<void>((ref) {
-  ref.listen(authProvider, (prev, next) async {
-    if (next is! SignedIn) return;
-    if (prev is SignedIn && prev.uid == next.uid) return;
+  // Слияния идут по очереди: параллельные переплетались бы в записи на телефон.
+  var queue = Future<void>.value();
+
+  Future<void> run(String uid) async {
+    bool current() {
+      if (!ref.mounted) return false;
+      final auth = ref.read(authProvider);
+      return auth is SignedIn && auth.uid == uid;
+    }
+
     final local = ref.read(localDataProvider);
     final cloud = ref.read(userCloudProvider);
-    if (local == null || cloud == null) return;
-    await CloudSync(local, cloud).merge();
-    if (!ref.mounted) return;
+    if (local == null || cloud == null || !current()) return;
+    await CloudSync(local, cloud, stillCurrent: current).merge();
+    if (!current()) return;
     ref
       ..invalidate(workoutsProvider)
       ..invalidate(templatesProvider)
@@ -65,6 +72,13 @@ final cloudSyncProvider = Provider<void>((ref) {
       ..invalidate(customExercisesProvider)
       ..invalidate(favoritesProvider)
       ..invalidate(noteProvider);
+  }
+
+  // fireImmediately: сохранённый сеанс при запуске тоже требует слияния.
+  ref.listen(authProvider, fireImmediately: true, (prev, next) {
+    if (next is! SignedIn) return;
+    if (prev is SignedIn && prev.uid == next.uid) return;
+    queue = queue.then((_) => run(next.uid)).catchError((Object _) {});
   });
 });
 
