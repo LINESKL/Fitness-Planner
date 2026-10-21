@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Каталог упражнений загружается из wger.de -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Поиск залов рядом -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Fitness Planner"
         android:name="${applicationName}"
