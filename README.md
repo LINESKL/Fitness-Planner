@@ -247,3 +247,17 @@ flutter run
 ```bash
 flutter test
 ```
+
+## Firebase
+
+Проект `fitness-planner-22869`. Правила Firestore (`firestore.rules`): пользователь читает и пишет только
+документы в `users/{его uid}/...`; всё остальное, включая запросы без входа, запрещено.
+
+Проверка правил в эмуляторе (нужны Java 21+ и Node; в CI не входит):
+
+```sh
+cd firestore-tests && npm install && cd ..
+firebase emulators:exec --only firestore --project fitness-planner-22869 "cd firestore-tests && npm test"
+```
+
+Заливка правил: `firebase deploy --only firestore:rules --project fitness-planner-22869`.
