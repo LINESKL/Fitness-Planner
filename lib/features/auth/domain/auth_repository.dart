@@ -16,6 +16,14 @@ final class SignedIn extends AuthState {
 
   final String uid;
   final String? email;
+
+  // Firebase повторно отдаёт того же пользователя — это не смена состояния.
+  @override
+  bool operator ==(Object other) =>
+      other is SignedIn && other.uid == uid && other.email == email;
+
+  @override
+  int get hashCode => Object.hash(uid, email);
 }
 
 /// Ошибка входа с текстом, готовым для показа пользователю.
