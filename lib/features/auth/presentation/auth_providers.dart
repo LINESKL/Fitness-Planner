@@ -7,19 +7,33 @@ final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => throw UnimplementedError('authRepositoryProvider не переопределён'),
 );
 
-/// Вошёл ли пользователь.
-final authProvider = NotifierProvider<AuthNotifier, bool>(AuthNotifier.new);
+/// Текущее состояние входа.
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);
 
-class AuthNotifier extends Notifier<bool> {
+class AuthNotifier extends Notifier<AuthState> {
+  AuthRepository get _repo => ref.read(authRepositoryProvider);
+
   @override
-  bool build() {
+  AuthState build() {
     final repo = ref.watch(authRepositoryProvider);
-    final subscription = repo.authStateChanges().listen((v) => state = v);
+    final subscription = repo.changes().listen((v) => state = v);
     ref.onDispose(subscription.cancel);
-    return repo.isSignedIn;
+    return repo.current;
   }
 
-  Future<void> signIn() => ref.read(authRepositoryProvider).signIn();
+  Future<void> continueAsGuest() => _repo.continueAsGuest();
 
-  Future<void> signOut() => ref.read(authRepositoryProvider).signOut();
+  Future<void> signInWithEmail(String email, String password) =>
+      _repo.signInWithEmail(email, password);
+
+  Future<void> register(String email, String password) =>
+      _repo.register(email, password);
+
+  Future<void> signInWithGoogle() => _repo.signInWithGoogle();
+
+  Future<void> resetPassword(String email) => _repo.resetPassword(email);
+
+  Future<void> signOut() => _repo.signOut();
 }

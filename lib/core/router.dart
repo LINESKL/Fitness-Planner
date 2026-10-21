@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/domain/auth_repository.dart';
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/exercises/presentation/custom_exercise_screen.dart';
@@ -21,8 +22,8 @@ import '../home_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final rootKey = GlobalKey<NavigatorState>();
-  final signedIn = ValueNotifier(ref.read(authProvider));
-  ref.listen(authProvider, (_, value) => signedIn.value = value);
+  final signedIn = ValueNotifier(ref.read(authProvider) is! SignedOut);
+  ref.listen(authProvider, (_, v) => signedIn.value = v is! SignedOut);
 
   final router = GoRouter(
     navigatorKey: rootKey,

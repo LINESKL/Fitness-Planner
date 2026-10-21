@@ -40,7 +40,7 @@ class LoginScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
                 FilledButton(
-                  onPressed: ref.read(authProvider.notifier).signIn,
+                  onPressed: ref.read(authProvider.notifier).continueAsGuest,
                   child: const Text('Продолжить как гость'),
                 ),
               ],
