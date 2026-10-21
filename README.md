@@ -160,6 +160,31 @@ GoRouter (`lib/core/router.dart`), у всех маршрутов есть им�
 Flutter, Dart, Material 3, Riverpod, GoRouter, dio, Hive, SharedPreferences, Firebase (Auth, Firestore,
 Cloud Messaging, Crashlytics), Google Maps, geolocator, wger API, OpenStreetMap Overpass API, GitHub Actions.
 
+## Производительность
+
+- Каталог wger грузится страницами по 50 (`limit/offset`) с бесконечной прокруткой: когда последняя строка
+  списка появляется на экране, подгружается следующая страница. Раньше весь каталог (932 упражнения, 6.4 МБ JSON)
+  приходил одним запросом. Поиск — по загруженным страницам; если ничего не нашлось, страницы подгружаются дальше.
+- Картинки — `cached_network_image`: кэш на диске (видны без сети, не качаются заново), в памяти — уменьшенные.
+- Таймер отдыха перерисовывает только цифры, а не весь экран отдыха.
+- Линтеры `prefer_const_*` включены — `const` проверяется при каждом `flutter analyze`.
+
+Замер — `integration_test/catalog_perf_test.dart` (профильный режим, эмулятор): открыть каталог и пролистать.
+
+```bash
+flutter drive --profile --no-dds --driver=test_driver/perf_driver.dart \
+  --target=integration_test/catalog_perf_test.dart
+```
+
+| | Каталог готов | Кадров не уложились в 16 мс (растеризация) | Растеризация, p90 |
+|---|---|---|---|
+| До: весь каталог одним запросом | 1.9–2.7 с | 23–36 | 16–17 мс |
+| После: страницы, первый запуск | 1.3–1.9 с | 7–36 | 5–21 мс |
+| После: страницы, картинки уже в кэше | 1.3 с | 4 | 5.6 мс |
+
+При первом запуске `cached_network_image` инициализирует дисковый кэш — один кадр сборки ~50 мс;
+дальше картинки берутся с диска, и прокрутка почти не теряет кадров.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и pull request: `flutter pub get` →

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -69,8 +70,9 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     }
   }
 
-  Widget _list(List<Exercise> list, Set<String> favorites) {
-    if (list.isEmpty) {
+  Widget _list(List<Exercise> list, Set<String> favorites, int? nextOffset) {
+    final hasMore = nextOffset != null;
+    if (list.isEmpty && !hasMore) {
       return MessageView(
         icon: _favoritesOnly ? Icons.star_outline : Icons.search_off,
         text: _favoritesOnly && _query.isEmpty
@@ -82,8 +84,15 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
     return RefreshIndicator(
       onRefresh: () => ref.refresh(exercisesProvider.future),
       child: ListView.builder(
-        itemCount: list.length + 1,
-        itemBuilder: (context, i) => i == 0
+        itemCount: list.length + (hasMore ? 2 : 1),
+        itemBuilder: (context, i) => i == list.length + 1
+            ? _LoadMore(
+                // Новый сдвиг — новая строка: страница из одних дублей
+                // не оставит вечный индикатор.
+                key: ValueKey(nextOffset),
+                onShown: ref.read(exercisesProvider.notifier).loadMore,
+              )
+            : i == 0
             ? ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Theme.of(context).colorScheme.primary,
@@ -144,6 +153,7 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
                       child: _list(
                         _filter(catalog.items, favorites),
                         favorites,
+                        catalog.nextOffset,
                       ),
                     ),
                   ],
@@ -162,6 +172,31 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
       ],
     );
   }
+}
+
+/// Последняя строка списка: появилась на экране — пора грузить следующую страницу.
+class _LoadMore extends StatefulWidget {
+  const _LoadMore({super.key, required this.onShown});
+
+  final VoidCallback onShown;
+
+  @override
+  State<_LoadMore> createState() => _LoadMoreState();
+}
+
+class _LoadMoreState extends State<_LoadMore> {
+  @override
+  void initState() {
+    super.initState();
+    // После кадра: менять состояние провайдера во время сборки нельзя.
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.onShown());
+  }
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.all(16),
+    child: Center(child: CircularProgressIndicator()),
+  );
 }
 
 class _OfflineBanner extends StatelessWidget {
@@ -209,13 +244,15 @@ class _ExerciseTile extends StatelessWidget {
       leading: url == null
           ? letter
           : ClipOval(
-              child: Image.network(
-                url,
+              // Кэш на диске: картинки видны и без сети, не качаются заново.
+              child: CachedNetworkImage(
+                imageUrl: url,
                 width: 40,
                 height: 40,
-                cacheWidth: 120,
+                memCacheWidth: 120,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => letter,
+                placeholder: (_, _) => letter,
+                errorWidget: (_, _, _) => letter,
               ),
             ),
       title: Text(exercise.name),

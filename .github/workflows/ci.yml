@@ -83,4 +83,4 @@ jobs:
         with:
           api-level: 34
           arch: x86_64
-          script: flutter test integration_test
+          script: flutter test integration_test/workout_flow_test.dart

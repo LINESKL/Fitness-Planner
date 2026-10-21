@@ -92,18 +92,61 @@ class CustomExercisesNotifier extends AsyncNotifier<List<Exercise>> {
   }
 }
 
-/// Каталог: свои упражнения первыми, затем встроенные и wger.
-final exercisesProvider = FutureProvider<ExerciseCatalog>(
-  (ref) async {
+/// Каталог: свои упражнения первыми, затем встроенные и wger постранично.
+final exercisesProvider =
+    AsyncNotifierProvider<ExercisesNotifier, ExerciseCatalog>(
+      ExercisesNotifier.new,
+      // Повтор — по кнопке на экране ошибки, без фоновых попыток.
+      retry: (_, _) => null,
+    );
+
+class ExercisesNotifier extends AsyncNotifier<ExerciseCatalog> {
+  bool _loadingMore = false;
+
+  @override
+  Future<ExerciseCatalog> build() async {
     final custom = await ref.watch(customExercisesProvider.future);
-    final catalog = await ref
-        .watch(exerciseRepositoryProvider)
-        .fetchExercises();
-    return (items: [...custom, ...catalog.items], offline: catalog.offline);
-  },
-  // Повтор — по кнопке на экране ошибки, без фоновых попыток.
-  retry: (_, _) => null,
-);
+    final page = await ref.watch(exerciseRepositoryProvider).fetchExercises();
+    return (
+      items: [...custom, ...page.items],
+      offline: page.offline,
+      nextOffset: page.nextOffset,
+    );
+  }
+
+  /// Следующая страница (бесконечная прокрутка); повторные вызовы во время
+  /// загрузки игнорируются.
+  Future<void> loadMore() async {
+    final current = state.value;
+    final offset = current?.nextOffset;
+    if (current == null || offset == null || _loadingMore) return;
+    _loadingMore = true;
+    try {
+      final page = await ref
+          .read(exerciseRepositoryProvider)
+          .fetchExercises(offset: offset);
+      final seen = {for (final e in current.items) e.name.toLowerCase()};
+      state = AsyncData((
+        items: [
+          ...current.items,
+          for (final e in page.items)
+            if (seen.add(e.name.toLowerCase())) e,
+        ],
+        offline: current.offline,
+        nextOffset: page.nextOffset,
+      ));
+    } on ExerciseLoadException {
+      // ponytail: без сети подгрузка просто останавливается; заново — pull-to-refresh.
+      state = AsyncData((
+        items: current.items,
+        offline: current.offline,
+        nextOffset: null,
+      ));
+    } finally {
+      _loadingMore = false;
+    }
+  }
+}
 
 /// Завершённые тренировки, от старых к новым.
 final workoutsProvider = AsyncNotifierProvider<WorkoutsNotifier, List<Workout>>(

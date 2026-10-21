@@ -5,6 +5,9 @@ import 'wger_dto.dart';
 
 const wgerBaseUrl = 'https://wger.de/api/v2/';
 
+/// Упражнений на страницу: весь каталог (~900, 6 МБ JSON) грузился бы секунды.
+const wgerPageSize = 50;
+
 /// Клиент открытого API wger.de: справочник упражнений, ключ не нужен.
 class WgerApi {
   WgerApi(this._dio);
@@ -21,18 +24,23 @@ class WgerApi {
 
   final Dio _dio;
 
-  /// Весь каталог одним запросом: поиска по имени на сервере нет, ищем на устройстве.
-  Future<List<WgerExerciseDto>> fetchExercises() async {
+  /// Страница каталога; [hasMore] — у сервера есть следующая.
+  Future<({List<WgerExerciseDto> items, bool hasMore})> fetchExercises({
+    int offset = 0,
+  }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         'exerciseinfo/',
-        queryParameters: {'limit': 1000},
+        queryParameters: {'limit': wgerPageSize, 'offset': offset},
       );
       final results = response.data?['results'];
       if (results is! List) {
         throw const ExerciseLoadException('Сервер вернул неожиданный ответ');
       }
-      return [for (final json in results) ?_parse(json)];
+      return (
+        items: [for (final json in results) ?_parse(json)],
+        hasMore: response.data?['next'] != null,
+      );
     } on DioException catch (e) {
       throw ExerciseLoadException(_messageFor(e));
     }

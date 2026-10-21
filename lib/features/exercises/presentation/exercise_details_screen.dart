@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -177,12 +178,12 @@ class _ExerciseDetailsScreenState extends ConsumerState<ExerciseDetailsScreen> {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                url,
+              child: CachedNetworkImage(
+                imageUrl: url,
                 height: 200,
                 fit: BoxFit.contain,
-                cacheHeight: 600,
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                memCacheHeight: 600,
+                errorWidget: (_, _, _) => const SizedBox.shrink(),
               ),
             ),
           ],

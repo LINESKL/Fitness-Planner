@@ -32,11 +32,12 @@ void main() {
   );
   const offline = ExerciseLoadException('Нет подключения к интернету');
 
-  void online(List<Exercise> items) =>
-      when(() => remote.fetchExercises())
-          .thenAnswer((_) async => (items: items, offline: false));
+  void online(List<Exercise> items, {int offset = 0, int? next}) => when(
+    () => remote.fetchExercises(offset: offset),
+  ).thenAnswer((_) async => (items: items, offline: false, nextOffset: next));
 
-  void noNetwork() => when(() => remote.fetchExercises()).thenThrow(offline);
+  void noNetwork({int offset = 0}) =>
+      when(() => remote.fetchExercises(offset: offset)).thenThrow(offline);
 
   test('сеть есть — свежий каталог, не офлайн', () async {
     online([squat]);
@@ -46,7 +47,7 @@ void main() {
 
     expect(catalog.items.single.name, 'Squats');
     expect(catalog.offline, isFalse);
-    verify(() => remote.fetchExercises()).called(1);
+    verify(() => remote.fetchExercises(offset: 0)).called(1);
   });
 
   test('сети нет — каталог из кэша с пометкой офлайн', () async {
@@ -71,5 +72,43 @@ void main() {
     final repo = await CachedExerciseRepository.open(remote);
 
     expect(repo.fetchExercises(), throwsA(same(offline)));
+  });
+
+  const lunge = Exercise(id: 'wger-9', name: 'Lunges', muscleGroup: 'Ноги');
+
+  test('следующая страница дописывается в кэш', () async {
+    online([squat], next: 50);
+    online([lunge], offset: 50);
+    final repo = await CachedExerciseRepository.open(remote);
+    await repo.fetchExercises();
+    final page = await repo.fetchExercises(offset: 50);
+    expect(page.items.single.name, 'Lunges');
+
+    noNetwork();
+    final cached = await repo.fetchExercises();
+
+    expect(cached.items.map((e) => e.name), ['Squats', 'Lunges']);
+    expect(cached.nextOffset, isNull);
+  });
+
+  test('первая страница заново — кэш начинается с неё', () async {
+    online([squat], next: 50);
+    online([lunge], offset: 50);
+    final repo = await CachedExerciseRepository.open(remote);
+    await repo.fetchExercises();
+    await repo.fetchExercises(offset: 50);
+    await repo.fetchExercises();
+
+    noNetwork();
+    expect((await repo.fetchExercises()).items.single.name, 'Squats');
+  });
+
+  test('сети нет на следующей странице — ошибка, не кэш', () async {
+    online([squat], next: 50);
+    noNetwork(offset: 50);
+    final repo = await CachedExerciseRepository.open(remote);
+    await repo.fetchExercises();
+
+    expect(repo.fetchExercises(offset: 50), throwsA(same(offline)));
   });
 }

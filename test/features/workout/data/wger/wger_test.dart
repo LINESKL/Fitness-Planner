@@ -116,11 +116,27 @@ void main() {
         }),
       );
 
-      final list = await apiWith(adapter).fetchExercises();
+      final page = await apiWith(adapter).fetchExercises(offset: 100);
 
-      expect(list.single.id, 1);
+      expect(page.items.single.id, 1);
+      expect(page.hasMore, isFalse);
       expect(adapter.last?.path, 'exerciseinfo/');
-      expect(adapter.last?.queryParameters['limit'], 1000);
+      expect(adapter.last?.queryParameters['limit'], wgerPageSize);
+      expect(adapter.last?.queryParameters['offset'], 100);
+    });
+
+    test('есть ссылка next — есть следующая страница', () async {
+      final adapter = FakeAdapter(
+        (_) => jsonBody({
+          'next': 'https://wger.de/api/v2/exerciseinfo/?limit=50&offset=50',
+          'results': [exerciseJson()],
+        }),
+      );
+
+      final page = await apiWith(adapter).fetchExercises();
+
+      expect(page.hasMore, isTrue);
+      expect(adapter.last?.queryParameters['offset'], 0);
     });
 
     test('нет сети — ExerciseLoadException с понятным текстом', () async {
@@ -153,9 +169,9 @@ void main() {
         }),
       );
 
-      final list = await apiWith(adapter).fetchExercises();
+      final page = await apiWith(adapter).fetchExercises();
 
-      expect(list.map((e) => e.id), [2]);
+      expect(page.items.map((e) => e.id), [2]);
     });
 
     test('ответ не того формата — ExerciseLoadException', () async {
@@ -198,9 +214,30 @@ void main() {
     final list = catalog.items;
 
     expect(catalog.offline, isFalse);
+    expect(catalog.nextOffset, isNull);
 
     expect(list.first.name, 'Жим лёжа');
     expect(list.where((e) => e.name.toLowerCase() == 'приседания').length, 1);
     expect(list.last.name, 'Deadlift');
   });
+
+  test(
+    'репозиторий: следующие страницы — без встроенных, со сдвигом',
+    () async {
+      final adapter = FakeAdapter(
+        (_) => jsonBody({
+          'next': 'есть ещё',
+          'results': [
+            exerciseJson(id: 9, names: [(2, 'Lunges')]),
+          ],
+        }),
+      );
+
+      final catalog = await RemoteExerciseRepository(apiWith(adapter))
+          .fetchExercises(offset: 50);
+
+      expect(catalog.items.map((e) => e.name), ['Lunges']);
+      expect(catalog.nextOffset, 50 + wgerPageSize);
+    },
+  );
 }

@@ -14,13 +14,17 @@ class FakeExerciseRepository implements ExerciseRepository {
   int calls = 0;
 
   @override
-  Future<ExerciseCatalog> fetchExercises() async {
+  Future<ExerciseCatalog> fetchExercises({int offset = 0}) async {
     final response =
         responses[calls < responses.length ? calls : responses.length - 1];
     calls++;
     if (response is Exception) throw response;
     if (response is ExerciseCatalog) return response;
-    return (items: response as List<Exercise>, offline: false);
+    return (
+      items: response as List<Exercise>,
+      offline: false,
+      nextOffset: null,
+    );
   }
 }
 
@@ -45,6 +49,33 @@ Future<FakeExerciseRepository> pump(
 }
 
 void main() {
+  testWidgets('бесконечная прокрутка: у конца списка — следующая страница', (
+    tester,
+  ) async {
+    final first = [
+      for (var i = 0; i < 30; i++)
+        Exercise(id: 'w$i', name: 'Упражнение $i', muscleGroup: 'Спина'),
+    ];
+    const last = Exercise(id: 'w-last', name: 'Последнее', muscleGroup: 'Ноги');
+    final repo = await pump(tester, [
+      (items: first, offline: false, nextOffset: 30),
+      (items: [last], offline: false, nextOffset: null),
+    ]);
+    await tester.pumpAndSettle();
+    expect(repo.calls, 1);
+
+    await tester.dragUntilVisible(
+      find.text('Последнее'),
+      find.byType(ListView),
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
+
+    expect(repo.calls, 2);
+    expect(find.text('Последнее'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
   testWidgets('пока грузится — индикатор, потом список', (tester) async {
     await pump(tester, [exercises]);
 
@@ -114,7 +145,7 @@ void main() {
   });
 
   testWidgets('каталог из кэша — баннер «нет сети»', (tester) async {
-    await pump(tester, [(items: exercises, offline: true)]);
+    await pump(tester, [(items: exercises, offline: true, nextOffset: null)]);
     await tester.pumpAndSettle();
 
     expect(find.text('Нет сети — показан сохранённый каталог'), findsOneWidget);

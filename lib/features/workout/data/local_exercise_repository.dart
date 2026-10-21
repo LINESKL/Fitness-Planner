@@ -6,6 +6,6 @@ class LocalExerciseRepository implements ExerciseRepository {
   const LocalExerciseRepository();
 
   @override
-  Future<ExerciseCatalog> fetchExercises() async =>
-      (items: sampleExercises, offline: false);
+  Future<ExerciseCatalog> fetchExercises({int offset = 0}) async =>
+      (items: sampleExercises, offline: false, nextOffset: null);
 }

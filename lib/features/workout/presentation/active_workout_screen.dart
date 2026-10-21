@@ -477,6 +477,26 @@ class _TypeSheet extends ConsumerWidget {
   }
 }
 
+/// Остаток отдыха. Тикает раз в секунду — перерисовывается только он,
+/// а не весь экран отдыха.
+class _RestClock extends ConsumerWidget {
+  const _RestClock();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Text(
+      formatDuration(ref.watch(restLeftProvider) ?? Duration.zero),
+      style: theme.textTheme.displayLarge?.copyWith(
+        fontSize: 80,
+        fontWeight: FontWeight.w800,
+        color: theme.colorScheme.primary,
+        fontFeatures: tabularFigures,
+      ),
+    );
+  }
+}
+
 /// Экран отдыха: большой таймер, ±15 с, что дальше.
 class _RestView extends ConsumerWidget {
   const _RestView({required this.workout});
@@ -486,7 +506,6 @@ class _RestView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final left = ref.watch(restLeftProvider) ?? Duration.zero;
     final notifier = ref.read(activeWorkoutProvider.notifier);
     final next = workout.currentSet;
     final exercise = workout.currentExercise;
@@ -509,18 +528,7 @@ class _RestView extends ConsumerWidget {
                   textAlign: TextAlign.center,
                   style: theme.textTheme.labelSmall,
                 ),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    formatDuration(left),
-                    style: theme.textTheme.displayLarge?.copyWith(
-                      fontSize: 80,
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.primary,
-                      fontFeatures: tabularFigures,
-                    ),
-                  ),
-                ),
+                const FittedBox(fit: BoxFit.scaleDown, child: _RestClock()),
                 const SizedBox(height: 8),
                 Wrap(
                   alignment: WrapAlignment.center,

@@ -5,7 +5,7 @@ import 'package:hive_ce/hive_ce.dart';
 import '../../domain/exercise.dart';
 import '../../domain/exercise_repository.dart';
 
-/// Offline-first обёртка: успешный ответ сохраняет, при ошибке сети отдаёт сохранённое.
+/// Offline-first обёртка: загруженные страницы сохраняет, без сети отдаёт сохранённое.
 class CachedExerciseRepository implements ExerciseRepository {
   CachedExerciseRepository(this._remote, this._box);
 
@@ -21,26 +21,29 @@ class CachedExerciseRepository implements ExerciseRepository {
   final Box<String> _box;
 
   @override
-  Future<ExerciseCatalog> fetchExercises() async {
+  Future<ExerciseCatalog> fetchExercises({int offset = 0}) async {
     try {
-      final catalog = await _remote.fetchExercises();
-      await _box.put(
-        _key,
-        jsonEncode([for (final e in catalog.items) _toJson(e)]),
-      );
-      return catalog;
+      final page = await _remote.fetchExercises(offset: offset);
+      // Первая страница начинает кэш заново, следующие дописываются.
+      await _save([if (offset > 0) ..._cached() ?? const [], ...page.items]);
+      return page;
     } on ExerciseLoadException {
-      final cached = _box.get(_key);
-      if (cached == null) rethrow;
-      return (
-        items: [
-          for (final json in jsonDecode(cached) as List)
-            _fromJson(json as Map<String, dynamic>),
-        ],
-        offline: true,
-      );
+      final cached = _cached();
+      if (offset > 0 || cached == null) rethrow;
+      return (items: cached, offline: true, nextOffset: null);
     }
   }
+
+  List<Exercise>? _cached() => switch (_box.get(_key)) {
+    final String json => [
+      for (final e in jsonDecode(json) as List)
+        _fromJson(e as Map<String, dynamic>),
+    ],
+    _ => null,
+  };
+
+  Future<void> _save(List<Exercise> items) =>
+      _box.put(_key, jsonEncode([for (final e in items) _toJson(e)]));
 
   static Map<String, Object?> _toJson(Exercise e) => {
     'id': e.id,
