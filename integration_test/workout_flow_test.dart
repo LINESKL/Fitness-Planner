@@ -13,7 +13,7 @@ void main() {
   ) async {
     await pumpApp(tester, signedIn: false);
 
-    await tester.tap(find.text('Продолжить как гость'));
+    await tester.tap(await scrollToText(tester, 'Продолжить как гость'));
     await tester.pumpAndSettle();
     expect(find.text('Верх'), findsWidgets);
 

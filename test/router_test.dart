@@ -10,6 +10,7 @@ GoRouter routerOf(WidgetTester tester) =>
 void main() {
   testWidgets('без входа — экран входа, после входа — главная', (tester) async {
     await pumpApp(tester, signedIn: false);
+    await scrollToText(tester, 'Продолжить как гость');
     expect(find.text('Продолжить как гость'), findsOneWidget);
 
     await tester.tap(find.text('Продолжить как гость'));
@@ -24,6 +25,7 @@ void main() {
     routerOf(tester).go('/progress');
     await tester.pumpAndSettle();
 
+    await scrollToText(tester, 'Продолжить как гость');
     expect(find.text('Продолжить как гость'), findsOneWidget);
   });
 
@@ -34,6 +36,7 @@ void main() {
     await tester.tap(find.text('Выйти'));
     await tester.pumpAndSettle();
 
+    await scrollToText(tester, 'Продолжить как гость');
     expect(find.text('Продолжить как гость'), findsOneWidget);
   });
 
