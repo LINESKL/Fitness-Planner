@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/push_service.dart';
 import '../../auth/domain/auth_repository.dart';
@@ -52,6 +53,11 @@ final localDataWiperProvider = Provider<Future<void> Function()>(
   (ref) => () async {},
 );
 
+/// SharedPreferences для `synced_uid`; main подставляет, в тестах null.
+final syncPrefsProvider = Provider<SharedPreferences?>((ref) => null);
+
+const _syncedUidKey = 'synced_uid';
+
 /// Очередь слияний: [idle] завершается, когда все начатые слияния закончены.
 class CloudSyncController {
   Future<void> idle = Future<void>.value();
@@ -76,6 +82,15 @@ final cloudSyncProvider = Provider<CloudSyncController>((ref) {
     final local = ref.read(localDataProvider);
     final cloud = ref.read(userCloudProvider);
     if (local == null || cloud == null || !current()) return;
+    // Данные другого аккаунта остались на телефоне (сеанс сброшен не через
+    // «Выйти»): стираем до слияния, иначе они уйдут в облако этого пользователя.
+    final prefs = ref.read(syncPrefsProvider);
+    final stored = prefs?.getString(_syncedUidKey);
+    if (stored != null && stored != uid) {
+      await ref.read(localDataWiperProvider)();
+      if (!current()) return;
+    }
+    await prefs?.setString(_syncedUidKey, uid);
     await CloudSync(local, cloud, stillCurrent: current).merge();
     if (!current()) return;
     unawaited(push?.start(cloud, showSnack));
@@ -106,19 +121,41 @@ final cloudSyncProvider = Provider<CloudSyncController>((ref) {
 /// пользователя и прервётся; потом ждём его конец и только тогда стираем.
 final signOutAndWipeProvider = Provider<Future<void> Function()>(
   (ref) => () async {
+    // Токен убираем до выхода: правила Firestore пускают только с входом.
+    // Без ожидания сервера — офлайн выход не должен зависнуть.
+    final cloud = ref.read(userCloudProvider);
+    if (cloud != null) {
+      unawaited(
+        cloud.user
+            .update({'fcmToken': FieldValue.delete()})
+            .then((_) {}, onError: (Object _) {}),
+      );
+    }
+    unawaited(
+      Future(() => ref.read(pushMessagingProvider)?.deleteToken())
+          .then((_) {}, onError: (Object _) {}),
+    );
     await ref.read(authProvider.notifier).signOut();
     // Смена состояния доходит до authProvider по потоку, на следующем витке.
     await Future<void>.delayed(Duration.zero);
-    await ref.read(cloudSyncProvider).idle;
-    await ref.read(localDataWiperProvider)();
-    ref
-      ..invalidate(workoutsProvider)
-      ..invalidate(templatesProvider)
-      ..invalidate(programProvider)
-      ..invalidate(bodyEntriesProvider)
-      ..invalidate(customExercisesProvider)
-      ..invalidate(favoritesProvider)
-      ..invalidate(noteProvider);
+    // Зависшее (офлайн) слияние уже прерывается проверкой пользователя.
+    await ref
+        .read(cloudSyncProvider)
+        .idle
+        .timeout(const Duration(seconds: 5), onTimeout: () {});
+    try {
+      await ref.read(localDataWiperProvider)();
+      await ref.read(syncPrefsProvider)?.remove(_syncedUidKey);
+    } finally {
+      ref
+        ..invalidate(workoutsProvider)
+        ..invalidate(templatesProvider)
+        ..invalidate(programProvider)
+        ..invalidate(bodyEntriesProvider)
+        ..invalidate(customExercisesProvider)
+        ..invalidate(favoritesProvider)
+        ..invalidate(noteProvider);
+    }
   },
 );
 

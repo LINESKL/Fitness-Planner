@@ -83,6 +83,7 @@ Future<void> main() async {
           ),
         ),
         localDataWiperProvider.overrideWithValue(clearSyncedBoxes),
+        syncPrefsProvider.overrideWithValue(prefs),
         activeWorkoutStoreProvider.overrideWithValue(activeWorkout),
         initialActiveWorkoutProvider.overrideWithValue(restoredWorkout),
         exerciseRepositoryProvider.overrideWithValue(exercises),

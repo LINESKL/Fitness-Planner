@@ -11,6 +11,7 @@ import '../features/workout/data/cloud/user_cloud.dart';
 abstract interface class PushMessaging {
   Future<bool> requestPermission();
   Future<String?> token();
+  Future<void> deleteToken();
   Stream<String> tokenRefresh();
   Stream<({String? title, String? body})> foreground();
 }
@@ -27,6 +28,9 @@ class FirebasePushMessaging implements PushMessaging {
 
   @override
   Future<String?> token() => _fm.getToken();
+
+  @override
+  Future<void> deleteToken() => _fm.deleteToken();
 
   @override
   Stream<String> tokenRefresh() => _fm.onTokenRefresh;

@@ -37,6 +37,8 @@ class _Messaging implements PushMessaging {
   @override
   Future<String?> token() async => 't1';
   @override
+  Future<void> deleteToken() async {}
+  @override
   Stream<String> tokenRefresh() => refresh.stream;
   @override
   Stream<({String? title, String? body})> foreground() => const Stream.empty();

@@ -30,6 +30,8 @@ class FakeMessaging implements PushMessaging {
   }
 
   @override
+  Future<void> deleteToken() async {}
+  @override
   Stream<String> tokenRefresh() => refresh.stream;
   @override
   Stream<({String? title, String? body})> foreground() => messages.stream;

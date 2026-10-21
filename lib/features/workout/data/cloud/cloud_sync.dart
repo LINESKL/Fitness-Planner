@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../domain/body.dart';
 import '../../domain/exercise.dart';
 import '../../domain/program.dart';
@@ -64,6 +66,12 @@ class CloudSync {
     }
   }
 
+  /// Запись в облако без ожидания сервера: офлайн подтверждение не приходит,
+  /// а слияние (и выход из аккаунта) не должно на нём зависать. Очередь Firestore
+  /// доставит запись сама.
+  static void _fire(Future<void> write) =>
+      unawaited(write.then((_) {}, onError: (Object _) {}));
+
   Future<Map<String, Map<String, dynamic>>> _cloudDocs(String name) async {
     final snap = await cloud.collection(name).get();
     return {for (final d in snap.docs) d.id: d.data()};
@@ -83,7 +91,7 @@ class CloudSync {
       await saveFromCloud(json);
     }
     for (final item in localItems.where((i) => !remote.containsKey(id(i)))) {
-      await cloud.collection(name).doc(id(item)).set(toJson(item));
+      _fire(cloud.collection(name).doc(id(item)).set(toJson(item)));
     }
   }
 
@@ -110,9 +118,9 @@ class CloudSync {
       _check();
       await local.program.saveProgram(programFromJson(remote.data()!));
     } else {
-      await cloud
-          .meta('program')
-          .set(programToJson(await local.program.program()));
+      _fire(
+        cloud.meta('program').set(programToJson(await local.program.program())),
+      );
     }
   }
 
@@ -160,10 +168,12 @@ class CloudSync {
     }
     for (final e in (await local.notes.all()).entries) {
       if (cloudNotes.containsKey(e.key)) continue;
-      await cloud
-          .collection('notes')
-          .doc(noteDocId(e.key))
-          .set(noteToCloudJson(e.key, e.value));
+      _fire(
+        cloud
+            .collection('notes')
+            .doc(noteDocId(e.key))
+            .set(noteToCloudJson(e.key, e.value)),
+      );
     }
   }
 
@@ -178,7 +188,7 @@ class CloudSync {
     }
     final union = {...cloudIds, ...localIds};
     if (union.length != cloudIds.length) {
-      await cloud.meta('favorites').set(favoritesToCloudJson(union));
+      _fire(cloud.meta('favorites').set(favoritesToCloudJson(union)));
     }
   }
 }

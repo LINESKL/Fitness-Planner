@@ -1,3 +1,6 @@
+// Обёртки над запечатанными типами Firestore нужны только для имитации зависшей записи.
+// ignore_for_file: subtype_of_sealed_class
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -244,6 +247,18 @@ void main() {
       expect(await notes.all(), isEmpty);
     },
   );
+  test(
+    'офлайн: записи в облако не подтверждаются, слияние всё равно кончается',
+    () async {
+      await workouts.save(_w('w1', 'A'));
+      await notes.setNote('Жим', 'сиденье 4');
+      await favorites.toggle('x');
+      await CloudSync(
+        local,
+        _HangingCloud(fs.collection('users').doc('u1')),
+      ).merge().timeout(const Duration(seconds: 2));
+    },
+  );
 }
 
 class _BrokenCloud extends UserCloud {
@@ -266,4 +281,41 @@ class _LeavingWorkouts extends InMemoryWorkoutRepository {
     auth.controller.add(const Guest());
     await Future<void>.delayed(Duration.zero);
   }
+}
+
+/// Документ, чья запись не заканчивается (офлайн: сервер не подтверждает).
+class _HangingDoc implements DocumentReference<Map<String, dynamic>> {
+  _HangingDoc(this.real);
+  final DocumentReference<Map<String, dynamic>> real;
+  @override
+  Future<DocumentSnapshot<Map<String, dynamic>>> get([GetOptions? options]) =>
+      real.get(options);
+  @override
+  Future<void> set(Map<String, dynamic> data, [SetOptions? options]) =>
+      Completer<void>().future;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _HangingCollection implements CollectionReference<Map<String, dynamic>> {
+  _HangingCollection(this.real);
+  final CollectionReference<Map<String, dynamic>> real;
+  @override
+  Future<QuerySnapshot<Map<String, dynamic>>> get([GetOptions? options]) =>
+      real.get(options);
+  @override
+  DocumentReference<Map<String, dynamic>> doc([String? path]) =>
+      _HangingDoc(real.doc(path));
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _HangingCloud extends UserCloud {
+  _HangingCloud(super.user);
+  @override
+  CollectionReference<Map<String, dynamic>> collection(String name) =>
+      _HangingCollection(super.collection(name));
+  @override
+  DocumentReference<Map<String, dynamic>> meta(String name) =>
+      _HangingDoc(super.meta(name));
 }
