@@ -1,6 +1,8 @@
 // ignore_for_file: subtype_of_sealed_class, мок ссылок Firestore
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+import 'package:fitness_planner/features/gyms/domain/gym.dart';
 import 'package:fitness_planner/features/workout/data/cloud/synced_repositories.dart';
 import 'package:fitness_planner/features/workout/data/cloud/user_cloud.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
@@ -163,6 +165,35 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(await local.all(), isEmpty);
       verify(() => d.set(any())).called(1);
+    });
+  });
+
+  group('Мой зал', () {
+    const gym = Gym(id: 'osm-node-1', name: 'Iron', lat: 43.2, lon: 76.9);
+
+    test('set: локально и в users/u1/meta/gym', () async {
+      final local = InMemoryMyGymRepository();
+      await SyncedMyGymRepository(local, cloud).set(gym);
+      expect((await local.get())!.id, gym.id);
+      expect(await doc('meta/gym'), gym.toJson());
+    });
+
+    test('сброс: в облаке {gym: null}', () async {
+      final local = InMemoryMyGymRepository();
+      final repo = SyncedMyGymRepository(local, cloud);
+      await repo.set(gym);
+      await repo.set(null);
+      expect(await local.get(), isNull);
+      expect(await doc('meta/gym'), {'gym': null});
+    });
+
+    test('ошибка облака не мешает локальной записи', () async {
+      final local = InMemoryMyGymRepository();
+      await SyncedMyGymRepository(
+        local,
+        _ThrowingCloud(fs.collection('users').doc('u1')),
+      ).set(gym);
+      expect((await local.get())!.id, gym.id);
     });
   });
 }

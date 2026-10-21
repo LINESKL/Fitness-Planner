@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:fitness_planner/features/auth/domain/auth_repository.dart';
 import 'package:fitness_planner/features/auth/presentation/auth_providers.dart';
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+import 'package:fitness_planner/features/gyms/domain/gym.dart';
 import 'package:fitness_planner/features/workout/data/cloud/cloud_sync.dart';
 import 'package:fitness_planner/features/workout/data/cloud/user_cloud.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
@@ -47,6 +49,7 @@ void main() {
   late InMemoryBodyRepository body;
   late InMemoryNoteRepository notes;
   late InMemoryFavoriteRepository favorites;
+  late InMemoryMyGymRepository myGym;
 
   setUp(() {
     fs = FakeFirebaseFirestore();
@@ -56,6 +59,7 @@ void main() {
     body = InMemoryBodyRepository();
     notes = InMemoryNoteRepository();
     favorites = InMemoryFavoriteRepository();
+    myGym = InMemoryMyGymRepository();
     local = LocalData(
       workouts: workouts,
       program: program,
@@ -63,6 +67,7 @@ void main() {
       customExercises: InMemoryCustomExerciseRepository(),
       notes: notes,
       favorites: favorites,
+      myGym: myGym,
     );
   });
 
@@ -103,6 +108,30 @@ void main() {
     expect(await favorites.all(), {'a', 'b'});
     expect((await doc('meta/favorites'))!['ids'], ['a', 'b']);
   });
+
+  const gymA = Gym(id: 'osm-node-1', name: 'Облачный', lat: 1, lon: 2);
+  const gymB = Gym(id: 'osm-node-2', name: 'Локальный', lat: 3, lon: 4);
+
+  test('мой зал: облачный заменяет локальный', () async {
+    await cloud.meta('gym').set(gymA.toJson());
+    await myGym.set(gymB);
+    await merge();
+    expect((await myGym.get())!.id, gymA.id);
+  });
+
+  test(
+    'мой зал: в облаке нет или {gym: null} — локальный загружается',
+    () async {
+      await myGym.set(gymB);
+      await merge();
+      expect(await doc('meta/gym'), gymB.toJson());
+
+      await cloud.meta('gym').set({'gym': null});
+      await merge();
+      expect(await doc('meta/gym'), gymB.toJson());
+      expect((await myGym.get())!.id, gymB.id);
+    },
+  );
 
   test('программа: есть облачная — берётся её порядок', () async {
     await cloud
@@ -240,6 +269,7 @@ void main() {
         customExercises: InMemoryCustomExerciseRepository(),
         notes: notes,
         favorites: favorites,
+        myGym: myGym,
       );
       containerFor(auth, leaving);
       auth.controller.add(const SignedIn(uid: 'u1'));

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../../../gyms/domain/gym.dart';
+import '../../../gyms/domain/my_gym_repository.dart';
 import '../../domain/body.dart';
 import '../../domain/exercise.dart';
 import '../../domain/program.dart';
@@ -17,6 +19,7 @@ class LocalData {
     required this.customExercises,
     required this.notes,
     required this.favorites,
+    required this.myGym,
   });
 
   final WorkoutRepository workouts;
@@ -25,6 +28,7 @@ class LocalData {
   final CustomExerciseRepository customExercises;
   final NoteRepository notes;
   final FavoriteRepository favorites;
+  final MyGymRepository myGym;
 }
 
 /// Разовое слияние при входе: облако побеждает по id, чего нет в облаке —
@@ -54,6 +58,7 @@ class CloudSync {
       _customExercises,
       _notes,
       _favorites,
+      _myGym,
     ]) {
       if (!stillCurrent()) return;
       try {
@@ -190,6 +195,18 @@ class CloudSync {
     if (union.length != cloudIds.length) {
       _fire(cloud.meta('favorites').set(favoritesToCloudJson(union)));
     }
+  }
+
+  /// Зал: облачный (есть `id`), иначе локальный уходит в облако.
+  Future<void> _myGym() async {
+    final remote = (await cloud.meta('gym').get()).data();
+    if (remote != null && remote['id'] != null) {
+      _check();
+      await local.myGym.set(Gym.fromJson(remote));
+      return;
+    }
+    final mine = await local.myGym.get();
+    if (mine != null) _fire(cloud.meta('gym').set(mine.toJson()));
   }
 }
 

@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/push_service.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../gyms/presentation/gym_providers.dart';
 import '../../program/presentation/program_providers.dart';
 import '../data/cloud/cloud_sync.dart';
 import '../data/cloud/user_cloud.dart';
@@ -101,7 +102,8 @@ final cloudSyncProvider = Provider<CloudSyncController>((ref) {
       ..invalidate(bodyEntriesProvider)
       ..invalidate(customExercisesProvider)
       ..invalidate(favoritesProvider)
-      ..invalidate(noteProvider);
+      ..invalidate(noteProvider)
+      ..invalidate(myGymProvider);
   }
 
   // fireImmediately: сохранённый сеанс при запуске тоже требует слияния.
@@ -154,7 +156,8 @@ final signOutAndWipeProvider = Provider<Future<void> Function()>(
         ..invalidate(bodyEntriesProvider)
         ..invalidate(customExercisesProvider)
         ..invalidate(favoritesProvider)
-        ..invalidate(noteProvider);
+        ..invalidate(noteProvider)
+        ..invalidate(myGymProvider);
     }
   },
 );

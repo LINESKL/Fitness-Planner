@@ -1,3 +1,5 @@
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+
 import 'dart:async';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -67,6 +69,7 @@ void main() {
             customExercises: InMemoryCustomExerciseRepository(),
             notes: InMemoryNoteRepository(),
             favorites: InMemoryFavoriteRepository(),
+            myGym: InMemoryMyGymRepository(),
           ),
         ),
       ],

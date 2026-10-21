@@ -12,6 +12,8 @@ import 'core/push_service.dart';
 import 'firebase_options.dart';
 import 'features/auth/data/firebase_auth_repository.dart';
 import 'features/auth/presentation/auth_providers.dart';
+import 'features/gyms/data/my_gym_repositories.dart';
+import 'features/gyms/presentation/gym_providers.dart';
 import 'features/settings/presentation/settings_model.dart';
 import 'features/workout/data/cloud/synced_repositories.dart';
 import 'features/workout/data/hive/cached_exercise_repository.dart';
@@ -39,6 +41,7 @@ Future<void> main() async {
   final body = await HiveBodyRepository.open();
   final customExercises = await HiveCustomExerciseRepository.open();
   final favorites = await HiveFavoriteRepository.open();
+  final myGym = await HiveMyGymRepository.open();
   final activeWorkout = await HiveActiveWorkoutStore.open();
   final restoredWorkout = await activeWorkout.load();
   final exercises = await CachedExerciseRepository.open(
@@ -70,6 +73,9 @@ Future<void> main() async {
         favoriteRepositoryProvider.overrideWith(
           (ref) => syncedOr(ref, favorites, SyncedFavoriteRepository.new),
         ),
+        myGymRepositoryProvider.overrideWith(
+          (ref) => syncedOr(ref, myGym, SyncedMyGymRepository.new),
+        ),
         pushMessagingProvider.overrideWithValue(FirebasePushMessaging()),
         firestoreProvider.overrideWithValue(FirebaseFirestore.instance),
         localDataProvider.overrideWithValue(
@@ -80,6 +86,7 @@ Future<void> main() async {
             customExercises: customExercises,
             notes: notes,
             favorites: favorites,
+            myGym: myGym,
           ),
         ),
         localDataWiperProvider.overrideWithValue(clearSyncedBoxes),

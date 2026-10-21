@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import '../../../gyms/domain/gym.dart';
+import '../../../gyms/domain/my_gym_repository.dart';
 import '../../domain/body.dart';
 import '../../domain/exercise.dart';
 import '../../domain/program.dart';
@@ -171,5 +173,22 @@ class SyncedFavoriteRepository implements FavoriteRepository {
     await _local.toggle(exerciseId);
     final ids = await _local.all();
     _fire(() => _cloud.meta('favorites').set(favoritesToCloudJson(ids)));
+  }
+}
+
+class SyncedMyGymRepository implements MyGymRepository {
+  SyncedMyGymRepository(this._local, this._cloud);
+
+  final MyGymRepository _local;
+  final UserCloud _cloud;
+
+  @override
+  Future<Gym?> get() => _local.get();
+
+  /// Сброс уходит в облако как `{gym: null}`.
+  @override
+  Future<void> set(Gym? gym) async {
+    await _local.set(gym);
+    _fire(() => _cloud.meta('gym').set(gym?.toJson() ?? {'gym': null}));
   }
 }

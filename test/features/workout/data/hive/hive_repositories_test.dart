@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+import 'package:fitness_planner/features/gyms/domain/gym.dart';
 import 'package:fitness_planner/features/workout/data/hive/cached_exercise_repository.dart';
 import 'package:fitness_planner/features/workout/data/hive/hive_repositories.dart';
 import 'package:fitness_planner/features/workout/domain/active_workout.dart';
@@ -171,6 +173,7 @@ void main() {
       final body = await HiveBodyRepository.open();
       final custom = await HiveCustomExerciseRepository.open();
       final favorites = await HiveFavoriteRepository.open();
+      final myGym = await HiveMyGymRepository.open();
       final active = await Hive.openBox<Map>(HiveActiveWorkoutStore.boxName);
       final cache = await Hive.openBox<String>(
         CachedExerciseRepository.boxName,
@@ -182,6 +185,7 @@ void main() {
       await program.saveProgram(const Program(templateIds: ['t']));
       await notes.setNote('Жим', 'заметка');
       await favorites.toggle('x');
+      await myGym.set(const Gym(id: 'g', name: 'Зал', lat: 1, lon: 2));
       await active.put('current', {'k': 1});
       await cache.put('k', 'v');
       await Hive.box<Map>(HiveBodyRepository.boxName).put('b', {'k': 1});
@@ -194,6 +198,7 @@ void main() {
       expect((await program.program()).templateIds, isEmpty);
       expect(await notes.all(), isEmpty);
       expect(await favorites.all(), isEmpty);
+      expect(await myGym.get(), isNull);
       expect(Hive.box<Map>(HiveBodyRepository.boxName), isEmpty);
       expect(Hive.box<Map>(HiveCustomExerciseRepository.boxName), isEmpty);
       expect(active, isNotEmpty);

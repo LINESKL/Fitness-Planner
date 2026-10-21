@@ -1,3 +1,5 @@
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+
 import 'dart:async';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -66,6 +68,7 @@ LocalData _local(WorkoutRepository workouts) => LocalData(
   customExercises: InMemoryCustomExerciseRepository(),
   notes: InMemoryNoteRepository(),
   favorites: InMemoryFavoriteRepository(),
+  myGym: InMemoryMyGymRepository(),
 );
 
 const _pause = Duration(milliseconds: 50);

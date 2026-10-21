@@ -1,5 +1,6 @@
 import 'package:hive_ce/hive_ce.dart';
 
+import '../../../gyms/data/my_gym_repositories.dart';
 import '../../domain/active_workout.dart';
 import '../../domain/body.dart';
 import '../../domain/exercise.dart';
@@ -199,6 +200,7 @@ Future<void> clearSyncedBoxes() async {
     HiveProgramRepository.programBox,
     HiveBodyRepository.boxName,
     HiveCustomExerciseRepository.boxName,
+    HiveMyGymRepository.boxName,
   ]) {
     await Hive.box<Map>(name).clear();
   }

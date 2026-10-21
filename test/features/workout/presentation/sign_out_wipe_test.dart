@@ -1,3 +1,5 @@
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -63,6 +65,7 @@ LocalData _local(WorkoutRepository workouts) => LocalData(
   customExercises: InMemoryCustomExerciseRepository(),
   notes: InMemoryNoteRepository(),
   favorites: InMemoryFavoriteRepository(),
+  myGym: InMemoryMyGymRepository(),
 );
 
 void main() {
@@ -106,6 +109,7 @@ void main() {
       customExercises: await HiveCustomExerciseRepository.open(),
       notes: await HiveNoteRepository.open(),
       favorites: await HiveFavoriteRepository.open(),
+      myGym: await HiveMyGymRepository.open(),
     );
     final fs = FakeFirebaseFirestore();
     await fs
