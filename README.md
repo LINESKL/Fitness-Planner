@@ -231,6 +231,7 @@ flutter test integration_test -d emulator-5554 # на эмуляторе или 
 - `lib/core/` — тема, роутер, форматирование, общие виджеты
 - `lib/features/<фича>/` — `home` (Сегодня), `program`, `workout`, `progress`, `exercises`, `settings`, `auth`;
   внутри — `domain` / `data` / `presentation`
+- `lib/features/workout/data/cloud/` — синхронизация с Firestore: обёртки `Synced…Repository` и слияние `CloudSync`
 - `test/` — unit- и widget-тесты (зеркалят `lib/`)
 - `lib/features/workout/domain/` — в том числе задачи недели 1 на Dart (null safety, классы, коллекции, async/await),
   написанные сразу как доменная логика приложения; тесты — в `test/features/workout/domain/`
@@ -250,8 +251,50 @@ flutter test
 
 ## Firebase
 
-Проект `fitness-planner-22869`. Правила Firestore (`firestore.rules`): пользователь читает и пишет только
-документы в `users/{его uid}/...`; всё остальное, включая запросы без входа, запрещено.
+Проект `fitness-planner-22869`. Три части: вход (Firebase Auth), синхронизация данных (Cloud Firestore) и
+push-уведомления (FCM). Hive остаётся основным хранилищем — приложение работает офлайн и без аккаунта.
+
+### Вход
+
+`AuthRepository` (`lib/features/auth/`) отдаёт `AuthState`: `SignedOut`, `Guest` (только локально, флаг в
+SharedPreferences) или `SignedIn(uid, email)`. `FirebaseAuthRepository` умеет вход по email и паролю,
+регистрацию, вход через Google, сброс пароля письмом и «Продолжить как гость» (`login_screen.dart`). Ошибки
+Firebase переводятся в русские тексты (`authMessage`): неверный email или пароль, email уже занят, слабый
+пароль, нет сети. Сохранённый сеанс Firebase подхватывается при запуске.
+
+### Синхронизация
+
+Если пользователь вошёл в аккаунт (`userCloudProvider` ≠ null), `syncedOr` оборачивает каждый Hive-репозиторий
+в `Synced…Repository` (`lib/features/workout/data/cloud/`). Запись идёт сначала в Hive и с ожиданием, затем в
+Firestore без ожидания сервера: офлайн Firestore копит запись в своей очереди, а ошибка облака не ломает
+локальное сохранение. Гость и тесты работают с Hive/памятью напрямую, без Firebase.
+
+| Данные | Путь в Firestore |
+| --- | --- |
+| Тренировки | `users/{uid}/workouts/{id}` |
+| Шаблоны | `users/{uid}/templates/{id}` |
+| Замеры тела | `users/{uid}/body/{id}` |
+| Свои упражнения | `users/{uid}/customExercises/{id}` |
+| Заметки | `users/{uid}/notes/{упражнение}` |
+| Порядок программы, избранное | `users/{uid}/meta/program`, `users/{uid}/meta/favorites` |
+
+В облако не уходят фото замеров (`photoPath` — файл остаётся на телефоне) и идущая тренировка.
+
+**Слияние** (`CloudSync`) выполняется при входе и при запуске с сохранённым сеансом: документ из облака
+побеждает по id, чего в облаке нет — загружается туда; избранное объединяется; фото при совпадении id берётся
+локальное. Сбой одного раздела (нет сети, правила) не мешает остальным. Слияния идут в очереди
+(`CloudSyncController.idle`); при выходе или смене аккаунта текущее слияние прерывается (`stillCurrent`) и не
+пишет данные чужого пользователя на телефон. После слияния провайдеры данных перечитываются.
+
+**Выход из аккаунта** (Настройки → «Выйти», с подтверждением) стирает с телефона данные, живущие в облаке
+(`clearSyncedBoxes`): иначе следующий вошедший на этом телефоне увидел бы и загрузил в свой аккаунт чужие
+тренировки. Данные остаются в облаке и вернутся при следующем входе. Порядок: выход → ожидание идущего
+слияния → очистка Hive → перечитывание провайдеров (`signOutAndWipeProvider`).
+
+### Правила
+
+Правила Firestore (`firestore.rules`): пользователь читает и пишет только документы в `users/{его uid}/...`;
+всё остальное, включая запросы без входа, запрещено.
 
 Проверка правил в эмуляторе (нужны Java 21+ и Node; в CI не входит):
 
@@ -261,3 +304,24 @@ firebase emulators:exec --only firestore --project fitness-planner-22869 "cd fir
 ```
 
 Заливка правил: `firebase deploy --only firestore:rules --project fitness-planner-22869`.
+
+### Push-уведомления
+
+После слияния `PushService` (`lib/core/push_service.dart`) запрашивает разрешение на уведомления, получает
+FCM-токен и сохраняет его в `users/{uid}` (`fcmToken`, `tokenUpdatedAt`); при обновлении токена запись
+повторяется. Пока приложение открыто, пришедшее сообщение показывается плашкой (`SnackBar`) поверх любого
+экрана; в фоне его показывает система. При выходе или смене аккаунта подписки останавливаются.
+
+Тестовое сообщение: войти в приложении, открыть документ `users/{uid}` в консоли Firestore и скопировать
+`fcmToken`; затем в консоли Firebase → Messaging → «Новая кампания» → «Уведомления» → «Отправить тестовое
+сообщение», вставить токен.
+
+### Как проверить
+
+Тесты не обращаются к Firebase (в них его подменяют фейки и `mocktail`), запускаются обычным `flutter test`:
+
+- вход: `test/features/auth/firebase_auth_repository_test.dart`, `auth_state_test.dart`, `login_screen_test.dart`;
+- обёртки записи и слияние: `test/features/workout/data/cloud/synced_repositories_test.dart`, `cloud_sync_test.dart`;
+- провайдеры и выход: `test/features/workout/presentation/cloud_providers_test.dart`, `sign_out_wipe_test.dart`;
+- push: `test/core/push_service_test.dart`, `test/features/workout/presentation/push_wiring_test.dart`;
+- правила Firestore: `firestore-tests/rules.test.mjs` (эмулятор выше).
