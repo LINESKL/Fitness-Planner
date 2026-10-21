@@ -1,5 +1,7 @@
 # Fitness Planner
 
+[![CI](https://github.com/LINESKL/Fitness-Planner/actions/workflows/ci.yml/badge.svg)](https://github.com/LINESKL/Fitness-Planner/actions/workflows/ci.yml)
+
 Дневник силовых тренировок на Flutter для Android и iOS.
 
 ## Цель
@@ -156,7 +158,13 @@ GoRouter (`lib/core/router.dart`), у всех маршрутов есть им�
 ## Технологии
 
 Flutter, Dart, Material 3, Riverpod, GoRouter, dio, Hive, SharedPreferences, Firebase (Auth, Firestore,
-Cloud Messaging, Crashlytics), Google Maps, geolocator, wger API, OpenStreetMap Overpass API.
+Cloud Messaging, Crashlytics), Google Maps, geolocator, wger API, OpenStreetMap Overpass API, GitHub Actions.
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) на каждый push в `main` и pull request: `flutter pub get` →
+`dart format` → `flutter analyze` → `flutter test --coverage` → `flutter build apk --release`.
+APK и отчёт покрытия (`lcov.info`) публикуются как артефакты запуска.
 
 ## Структура репозитория
 
