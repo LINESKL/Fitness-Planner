@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "742800135927-9vrg6vgvobep3qd8vlafgte53foo0k4f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kz.aliar.fitness_planner",
+            "certificate_hash": "626bee7ca9fe28c01a8746852fcba6a06faa756d"
+          }
+        },
+        {
           "client_id": "742800135927-hasuq0chsqs4fpm5bdfuam0j8hjptg5p.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
