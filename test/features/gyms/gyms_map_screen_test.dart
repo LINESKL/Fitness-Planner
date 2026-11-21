@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
 import 'package:fitness_planner/features/gyms/domain/gym.dart';
@@ -12,6 +10,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/gym_fakes.dart';
 
 const _iron = Gym(
   id: 'osm-node-1',
@@ -27,49 +27,10 @@ const _bare = Gym(
   lon: 76.892,
 );
 
-final _pixel = base64Decode(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-);
-
-/// Тайлы без сети: прозрачный пиксель.
-class _FakeTiles extends TileProvider {
-  @override
-  ImageProvider getImage(TileCoordinates coordinates, TileLayer options) =>
-      MemoryImage(Uint8List.fromList(_pixel));
-}
-
-class _FakeLocation implements LocationService {
-  _FakeLocation(this.results);
-  final List<LocationResult> results;
-  int calls = 0;
-  int appSettings = 0;
-  int locationSettings = 0;
-
-  @override
-  Future<LocationResult> current() async =>
-      results[calls++ < results.length ? calls - 1 : results.length - 1];
-  @override
-  Future<void> openAppSettings() async => appSettings++;
-  @override
-  Future<void> openLocationSettings() async => locationSettings++;
-}
-
-class _FakeSearch implements GymSearch {
-  _FakeSearch(this.handler);
-  final Future<List<Gym>> Function(double lat, double lon) handler;
-  final calls = <(double, double)>[];
-
-  @override
-  Future<List<Gym>> nearby(double lat, double lon) {
-    calls.add((lat, lon));
-    return handler(lat, lon);
-  }
-}
-
 Future<InMemoryMyGymRepository> _open(
   WidgetTester tester, {
-  required _FakeLocation location,
-  required _FakeSearch search,
+  required FakeLocation location,
+  required FakeSearch search,
   Gym? mine,
 }) async {
   final repo = InMemoryMyGymRepository();
@@ -79,7 +40,7 @@ Future<InMemoryMyGymRepository> _open(
       overrides: <Override>[
         locationServiceProvider.overrideWithValue(location),
         gymSearchProvider.overrideWithValue(search),
-        tileProviderProvider.overrideWithValue(_FakeTiles()),
+        tileProviderProvider.overrideWithValue(FakeTiles()),
         myGymRepositoryProvider.overrideWithValue(repo),
       ],
       child: const MaterialApp(home: GymsMapScreen()),
@@ -95,8 +56,8 @@ void main() {
   testWidgets('Located: поиск вокруг пользователя, метки и «Моё место»', (
     tester,
   ) async {
-    final search = _FakeSearch((_, _) async => [_iron, _bare]);
-    await _open(tester, location: _FakeLocation([located]), search: search);
+    final search = FakeSearch((_, _) async => [_iron, _bare]);
+    await _open(tester, location: FakeLocation([located]), search: search);
 
     expect(find.text('Залы рядом'), findsOneWidget);
     expect(search.calls.last, (43.24, 76.89));
@@ -111,10 +72,10 @@ void main() {
   testWidgets('без геолокации: поиск по Алматы, «Моё место» скрыто', (
     tester,
   ) async {
-    final search = _FakeSearch((_, _) async => [_iron]);
+    final search = FakeSearch((_, _) async => [_iron]);
     await _open(
       tester,
-      location: _FakeLocation([const LocationDenied()]),
+      location: FakeLocation([const LocationDenied()]),
       search: search,
     );
 
@@ -126,8 +87,8 @@ void main() {
   testWidgets('LocationDenied: «Разрешить» → повторный запрос, плашка уходит', (
     tester,
   ) async {
-    final location = _FakeLocation([const LocationDenied(), located]);
-    final search = _FakeSearch((_, _) async => [_iron]);
+    final location = FakeLocation([const LocationDenied(), located]);
+    final search = FakeSearch((_, _) async => [_iron]);
     await _open(tester, location: location, search: search);
 
     expect(find.text('Без геолокации ищем по центру карты'), findsOneWidget);
@@ -144,11 +105,11 @@ void main() {
   testWidgets(
     'LocationDeniedForever: «Открыть настройки» → настройки и запрос',
     (tester) async {
-      final location = _FakeLocation([const LocationDeniedForever(), located]);
+      final location = FakeLocation([const LocationDeniedForever(), located]);
       await _open(
         tester,
         location: location,
-        search: _FakeSearch((_, _) async => []),
+        search: FakeSearch((_, _) async => []),
       );
 
       expect(find.text('Без геолокации ищем по центру карты'), findsOneWidget);
@@ -164,11 +125,11 @@ void main() {
   testWidgets('LocationOff: «Включить» → настройки геолокации и запрос', (
     tester,
   ) async {
-    final location = _FakeLocation([const LocationOff(), located]);
+    final location = FakeLocation([const LocationOff(), located]);
     await _open(
       tester,
       location: location,
-      search: _FakeSearch((_, _) async => []),
+      search: FakeSearch((_, _) async => []),
     );
 
     expect(find.text('Геолокация выключена'), findsOneWidget);
@@ -183,10 +144,10 @@ void main() {
   testWidgets('метка → окно с названием, адресом и расстоянием; «Мой зал»', (
     tester,
   ) async {
-    final search = _FakeSearch((_, _) async => [_iron, _bare]);
+    final search = FakeSearch((_, _) async => [_iron, _bare]);
     final repo = await _open(
       tester,
-      location: _FakeLocation([located]),
+      location: FakeLocation([located]),
       search: search,
     );
 
@@ -209,8 +170,8 @@ void main() {
     (tester) async {
       await _open(
         tester,
-        location: _FakeLocation([located]),
-        search: _FakeSearch((_, _) async => [_iron, _bare]),
+        location: FakeLocation([located]),
+        search: FakeSearch((_, _) async => [_iron, _bare]),
         mine: _iron,
       );
 
@@ -232,10 +193,10 @@ void main() {
   );
 
   testWidgets('«Искать здесь» ищет по центру карты', (tester) async {
-    final search = _FakeSearch((_, _) async => []);
+    final search = FakeSearch((_, _) async => []);
     await _open(
       tester,
-      location: _FakeLocation([const LocationDenied()]),
+      location: FakeLocation([const LocationDenied()]),
       search: search,
     );
 
@@ -252,7 +213,7 @@ void main() {
     tester,
   ) async {
     final pending = <Completer<List<Gym>>>[];
-    final search = _FakeSearch((_, _) {
+    final search = FakeSearch((_, _) {
       if (pending.isEmpty) return Future.value(<Gym>[]);
       return pending.removeAt(0).future;
     });
@@ -260,7 +221,7 @@ void main() {
     final c2 = Completer<List<Gym>>(), c3 = Completer<List<Gym>>();
     await _open(
       tester,
-      location: _FakeLocation([const LocationDenied()]),
+      location: FakeLocation([const LocationDenied()]),
       search: search,
     );
     pending.addAll([c2, c3]);
@@ -280,11 +241,11 @@ void main() {
 
   testWidgets('ошибка поиска → текст и «Повторить»', (tester) async {
     var fail = true;
-    final search = _FakeSearch((_, _) async {
+    final search = FakeSearch((_, _) async {
       if (fail) throw const GymLoadException('Нет подключения к интернету');
       return [_iron];
     });
-    await _open(tester, location: _FakeLocation([located]), search: search);
+    await _open(tester, location: FakeLocation([located]), search: search);
 
     expect(find.text('Нет подключения к интернету'), findsOneWidget);
     fail = false;
@@ -299,8 +260,8 @@ void main() {
   testWidgets('пустой результат → «Рядом залов не нашлось»', (tester) async {
     await _open(
       tester,
-      location: _FakeLocation([located]),
-      search: _FakeSearch((_, _) async => []),
+      location: FakeLocation([located]),
+      search: FakeSearch((_, _) async => []),
     );
     expect(find.text('Рядом залов не нашлось'), findsOneWidget);
   });

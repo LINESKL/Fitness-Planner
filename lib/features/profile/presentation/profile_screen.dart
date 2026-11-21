@@ -9,6 +9,8 @@ import '../../../core/format.dart';
 import '../../../core/theme.dart';
 import '../../auth/domain/auth_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../gyms/domain/gym.dart';
+import '../../gyms/presentation/gym_providers.dart';
 import '../../program/presentation/program_providers.dart';
 import '../../progress/presentation/progress_screen.dart' show formatKg;
 import '../../settings/presentation/settings_model.dart';
@@ -103,6 +105,13 @@ class ProfileScreen extends ConsumerWidget {
         Text('Статистика', style: title),
         const SizedBox(height: 8),
         _StatsSection(workouts: workouts),
+        const SizedBox(height: 24),
+        Text('Мой зал', style: title),
+        const SizedBox(height: 8),
+        _MyGymCard(
+          gym: ref.watch(myGymProvider).value,
+          onReset: () => ref.read(myGymProvider.notifier).set(null),
+        ),
         const SizedBox(height: 24),
         Text('Тело', style: title),
         const SizedBox(height: 8),
@@ -293,6 +302,52 @@ class _StatsSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MyGymCard extends StatelessWidget {
+  const _MyGymCard({required this.gym, required this.onReset});
+
+  final Gym? gym;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final gym = this.gym;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (gym == null)
+              Text('Не выбран', style: muted)
+            else ...[
+              Text(gym.name, style: theme.textTheme.titleMedium),
+              if (gym.address != null) Text(gym.address!, style: muted),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => context.pushNamed('gyms'),
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Найти на карте'),
+                ),
+                if (gym != null)
+                  TextButton(onPressed: onReset, child: const Text('Сбросить')),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

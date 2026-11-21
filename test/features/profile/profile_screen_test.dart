@@ -1,5 +1,9 @@
 import 'package:fitness_planner/core/format.dart';
 import 'package:fitness_planner/features/auth/domain/auth_repository.dart';
+import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
+import 'package:fitness_planner/features/gyms/domain/gym.dart';
+import 'package:fitness_planner/features/gyms/domain/location_service.dart';
+import 'package:fitness_planner/features/gyms/presentation/gym_providers.dart';
 import 'package:fitness_planner/features/workout/data/in_memory_repositories.dart';
 import 'package:fitness_planner/features/workout/domain/body.dart';
 import 'package:fitness_planner/features/workout/domain/set_entry.dart';
@@ -8,6 +12,7 @@ import 'package:fitness_planner/features/workout/presentation/workout_providers.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/gym_fakes.dart';
 import '../../helpers/pump_app.dart';
 
 class _Auth implements AuthRepository {
@@ -52,12 +57,15 @@ void main() {
     AuthState auth = const Guest(),
     List<Workout> workouts = const [],
     List<BodyEntry> body = const [],
+    Gym? gym,
     Size size = const Size(400, 2000),
   }) async {
     final bodyRepo = InMemoryBodyRepository();
     for (final b in body) {
       await bodyRepo.save(b);
     }
+    final gymRepo = InMemoryMyGymRepository();
+    await gymRepo.set(gym);
     await pumpApp(
       tester,
       size: size,
@@ -67,6 +75,12 @@ void main() {
           InMemoryWorkoutRepository(workouts),
         ),
         bodyRepositoryProvider.overrideWithValue(bodyRepo),
+        myGymRepositoryProvider.overrideWithValue(gymRepo),
+        locationServiceProvider.overrideWithValue(
+          FakeLocation([const LocationDenied()]),
+        ),
+        gymSearchProvider.overrideWithValue(FakeSearch((_, _) async => [])),
+        tileProviderProvider.overrideWithValue(FakeTiles()),
         localDataWiperProvider.overrideWithValue(() async => log.add('wipe')),
       ],
     );
@@ -282,6 +296,55 @@ void main() {
 
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
       expect(app.themeMode, ThemeMode.dark);
+    });
+  });
+
+  group('мой зал', () {
+    const gym = Gym(
+      id: 'osm-node-1',
+      name: 'Iron Gym',
+      address: 'ул. Абая 1',
+      lat: 43.241,
+      lon: 76.891,
+    );
+
+    testWidgets('карточка стоит между «Статистикой» и «Телом»', (tester) async {
+      await open(tester);
+
+      final stats = tester.getTopLeft(find.text('Статистика')).dy;
+      final mine = tester.getTopLeft(find.text('Мой зал')).dy;
+      final bodyTitle = tester.getTopLeft(find.text('Тело')).dy;
+      expect(stats < mine && mine < bodyTitle, isTrue);
+    });
+
+    testWidgets('нет зала: «Не выбран», «Найти на карте» открывает карту', (
+      tester,
+    ) async {
+      // Шире 400: подпись «© OpenStreetMap» во flutter_map на узком экране
+      // переполняется в тестовом шрифте.
+      await open(tester, size: const Size(800, 2000));
+      expect(find.text('Не выбран'), findsOneWidget);
+      expect(find.text('Сбросить'), findsNothing);
+
+      await tester.tap(find.text('Найти на карте'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Залы рядом'), findsOneWidget);
+    });
+
+    testWidgets('выбран: название и адрес; «Сбросить» → «Не выбран»', (
+      tester,
+    ) async {
+      await open(tester, gym: gym);
+      expect(find.text('Iron Gym'), findsOneWidget);
+      expect(find.text('ул. Абая 1'), findsOneWidget);
+      expect(find.text('Не выбран'), findsNothing);
+
+      await tester.tap(find.text('Сбросить'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Не выбран'), findsOneWidget);
+      expect(find.text('Iron Gym'), findsNothing);
     });
   });
 
