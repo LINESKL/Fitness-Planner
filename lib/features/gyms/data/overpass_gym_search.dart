@@ -7,6 +7,8 @@ const overpassUrl = 'https://overpass-api.de/api/interpreter';
 const gymSearchRadiusMeters = 3000;
 const _defaultName = 'Фитнес-зал';
 const _failed = 'Не удалось загрузить залы';
+const _userAgent =
+    'kz.aliar.fitness_planner/1.0 (+https://github.com/LINESKL/Fitness-Planner)';
 
 /// Залы из OpenStreetMap через Overpass API, ключ не нужен.
 class OverpassGymSearch implements GymSearch {
@@ -30,7 +32,11 @@ class OverpassGymSearch implements GymSearch {
       final response = await _dio.post<Object?>(
         overpassUrl,
         data: {'data': _query(lat, lon)},
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          // Правила Overpass требуют User-Agent, по которому видно приложение.
+          headers: {'User-Agent': _userAgent},
+        ),
       );
       final data = response.data;
       final found = data is Map ? data['elements'] : null;

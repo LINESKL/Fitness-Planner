@@ -66,6 +66,16 @@ void main() {
     expect(body, contains('out center tags;'));
   });
 
+  test('запрос подписан User-Agent приложения (правила Overpass)', () async {
+    final adapter = FakeAdapter((_) => jsonBody({'elements': []}));
+    await searchWith(adapter).nearby(43.2, 76.9);
+
+    expect(
+      adapter.last!.headers['User-Agent'],
+      startsWith('kz.aliar.fitness_planner'),
+    );
+  });
+
   test('node: координаты lat/lon, id osm-node-…', () async {
     final gyms = await searchReturning([
       {
