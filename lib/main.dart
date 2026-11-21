@@ -8,6 +8,7 @@ import 'package:provider/provider.dart' show ChangeNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/crash_reporting.dart';
 import 'core/push_service.dart';
 import 'firebase_options.dart';
 import 'features/auth/data/firebase_auth_repository.dart';
@@ -28,6 +29,7 @@ import 'features/workout/presentation/workout_providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await setupCrashReporting();
   await Hive.initFlutter();
   final prefs = await SharedPreferences.getInstance();
   final workouts = await HiveWorkoutRepository.open();
