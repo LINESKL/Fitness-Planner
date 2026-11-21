@@ -1,0 +1,9 @@
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: "#0F0F10"
+  adaptive_icon_foreground: assets/icon/foreground.png
+  # Отступ уже заложен в foreground.svg.
+  adaptive_icon_foreground_inset: 0
+  remove_alpha_ios: true
