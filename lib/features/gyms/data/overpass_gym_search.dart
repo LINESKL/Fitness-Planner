@@ -57,6 +57,9 @@ class OverpassGymSearch implements GymSearch {
       ' nwr["sport"="fitness"](around:$gymSearchRadiusMeters,$lat,$lon););\n'
       'out center tags;';
 
+  static String _name(Object? raw) =>
+      raw is String && raw.trim().isNotEmpty ? raw : _defaultName;
+
   /// Одна битая запись не должна ронять весь список.
   static Gym? _parse(Object? element) {
     try {
@@ -72,7 +75,7 @@ class OverpassGymSearch implements GymSearch {
       ].whereType<String>().join(' ');
       return Gym(
         id: 'osm-${e['type']}-${e['id']}',
-        name: tags['name'] as String? ?? _defaultName,
+        name: _name(tags['name']),
         address: address.isEmpty ? null : address,
         lat: lat.toDouble(),
         lon: lon.toDouble(),

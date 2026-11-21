@@ -31,8 +31,14 @@ class GeolocatorLocationService implements LocationService {
       );
       return Located(p.latitude, p.longitude);
     } catch (_) {
-      // Таймаут, выключенный сервис и т.п. — считаем геолокацию недоступной.
-      return const LocationOff();
+      // Таймаут и т.п.: если сервис включён — берём последнюю известную точку.
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return const LocationOff();
+      }
+      final last = await Geolocator.getLastKnownPosition();
+      return last == null
+          ? const LocationOff()
+          : Located(last.latitude, last.longitude);
     }
   }
 

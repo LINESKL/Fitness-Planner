@@ -11,6 +11,7 @@ class _FakePlatform extends GeolocatorPlatform with MockPlatformInterfaceMixin {
   LocationPermission permission = LocationPermission.denied;
   LocationPermission afterRequest = LocationPermission.denied;
   bool positionFails = false;
+  Position? lastKnown;
   int requests = 0;
 
   @override
@@ -24,6 +25,11 @@ class _FakePlatform extends GeolocatorPlatform with MockPlatformInterfaceMixin {
     requests++;
     return afterRequest;
   }
+
+  @override
+  Future<Position?> getLastKnownPosition({
+    bool forceLocationManager = false,
+  }) async => lastKnown;
 
   @override
   Future<Position> getCurrentPosition({
@@ -95,5 +101,24 @@ void main() {
     fake.permission = LocationPermission.always;
     fake.positionFails = true;
     expect(await GeolocatorLocationService().current(), isA<LocationOff>());
+  });
+
+  test('таймаут, но есть последняя известная точка — Located', () async {
+    fake.permission = LocationPermission.always;
+    fake.positionFails = true;
+    fake.lastKnown = Position(
+      latitude: 1,
+      longitude: 2,
+      timestamp: DateTime(2026),
+      accuracy: 1,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+    final r = await GeolocatorLocationService().current() as Located;
+    expect((r.lat, r.lon), (1, 2));
   });
 }

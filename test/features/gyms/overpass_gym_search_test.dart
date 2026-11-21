@@ -118,6 +118,20 @@ void main() {
     expect(gyms.single.name, 'Фитнес-зал');
   });
 
+  test('пустое или пробельное name — «Фитнес-зал»', () async {
+    final gyms = await searchReturning([
+      {
+        'type': 'node',
+        'id': 1,
+        'lat': 43.2,
+        'lon': 76.9,
+        'tags': {'name': '  '},
+      },
+    ]).nearby(43.2, 76.9);
+
+    expect(gyms.single.name, 'Фитнес-зал');
+  });
+
   test('адрес: улица + дом, только улица, иначе null', () async {
     Map<String, Object> node(int id, Map<String, String> tags) => {
       'type': 'node',

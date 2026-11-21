@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
 import 'package:fitness_planner/features/gyms/domain/gym.dart';
 import 'package:fitness_planner/features/gyms/domain/location_service.dart';
+import 'package:fitness_planner/features/gyms/domain/my_gym_repository.dart';
 import 'package:fitness_planner/features/gyms/presentation/gym_providers.dart';
 import 'package:fitness_planner/features/gyms/presentation/gyms_map_screen.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,7 @@ Future<InMemoryMyGymRepository> _open(
   required FakeLocation location,
   required FakeSearch search,
   Gym? mine,
+  MyGymRepository? repository,
 }) async {
   final repo = InMemoryMyGymRepository();
   await repo.set(mine);
@@ -41,13 +43,31 @@ Future<InMemoryMyGymRepository> _open(
         locationServiceProvider.overrideWithValue(location),
         gymSearchProvider.overrideWithValue(search),
         tileProviderProvider.overrideWithValue(FakeTiles()),
-        myGymRepositoryProvider.overrideWithValue(repo),
+        myGymRepositoryProvider.overrideWithValue(repository ?? repo),
       ],
       child: const MaterialApp(home: GymsMapScreen()),
     ),
   );
   await tester.pumpAndSettle();
   return repo;
+}
+
+class _ThrowingRepo implements MyGymRepository {
+  @override
+  Future<Gym?> get() async => null;
+  @override
+  Future<void> set(Gym? gym) async => throw Exception('boom');
+}
+
+class _SlowLocation extends FakeLocation {
+  _SlowLocation(super.results);
+  final gate = Completer<void>();
+  @override
+  Future<LocationResult> current() async {
+    final r = await super.current();
+    if (calls > 1) await gate.future;
+    return r;
+  }
 }
 
 void main() {
@@ -103,7 +123,7 @@ void main() {
   });
 
   testWidgets(
-    'LocationDeniedForever: «Открыть настройки» → настройки и запрос',
+    'LocationDeniedForever: «Открыть настройки» → настройки, запрос после возврата',
     (tester) async {
       final location = FakeLocation([const LocationDeniedForever(), located]);
       await _open(
@@ -117,10 +137,70 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(location.appSettings, 1);
+      expect(location.calls, 1); // сразу после открытия настроек не спрашиваем
+      expect(find.text('Открыть настройки'), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
       expect(location.calls, 2);
       expect(find.text('Открыть настройки'), findsNothing);
+      expect(find.byKey(const ValueKey('me')), findsOneWidget);
     },
   );
+
+  testWidgets('resume при уже определённом месте — без повторного запроса', (
+    tester,
+  ) async {
+    final location = FakeLocation([located]);
+    await _open(
+      tester,
+      location: location,
+      search: FakeSearch((_, _) async => []),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(location.calls, 1);
+  });
+
+  testWidgets('повторный «Разрешить» во время запроса игнорируется', (
+    tester,
+  ) async {
+    final location = _SlowLocation([const LocationDenied(), located]);
+    await _open(
+      tester,
+      location: location,
+      search: FakeSearch((_, _) async => []),
+    );
+    await tester.tap(find.text('Разрешить'));
+    await tester.pump();
+    await tester.tap(find.text('Разрешить'));
+    await tester.pump();
+    expect(location.calls, 2);
+    location.gate.complete();
+    await tester.pumpAndSettle();
+    expect(location.calls, 2);
+  });
+
+  testWidgets('ошибка сохранения зала → SnackBar, окно остаётся', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      location: FakeLocation([located]),
+      search: FakeSearch((_, _) async => [_iron]),
+      repository: _ThrowingRepo(),
+    );
+    await tester.tap(find.byKey(const ValueKey('gym-osm-node-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Мой зал'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось сохранить зал'), findsOneWidget);
+    expect(find.text('Зал сохранён'), findsNothing);
+    expect(find.text('Iron Gym'), findsWidgets);
+    expect(find.text('Мой зал'), findsOneWidget); // окно не закрылось
+  });
 
   testWidgets('LocationOff: «Включить» → настройки геолокации и запрос', (
     tester,
@@ -137,6 +217,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(location.locationSettings, 1);
+    expect(location.calls, 1);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
     expect(location.calls, 2);
     expect(find.text('Геолокация выключена'), findsNothing);
   });

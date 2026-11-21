@@ -17,7 +17,8 @@ class GymsMapScreen extends ConsumerStatefulWidget {
   ConsumerState<GymsMapScreen> createState() => _GymsMapScreenState();
 }
 
-class _GymsMapScreenState extends ConsumerState<GymsMapScreen> {
+class _GymsMapScreenState extends ConsumerState<GymsMapScreen>
+    with WidgetsBindingObserver {
   final _map = MapController();
   bool _ready = false;
   VoidCallback? _afterReady;
@@ -27,6 +28,7 @@ class _GymsMapScreenState extends ConsumerState<GymsMapScreen> {
   List<Gym>? _gyms;
   String? _error;
   bool _loading = false;
+  bool _locating = false;
   int _request = 0; // применяем только ответ последнего поиска
 
   LatLng? get _user => switch (_location) {
@@ -37,11 +39,21 @@ class _GymsMapScreenState extends ConsumerState<GymsMapScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _locate();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Вернулись из системных настроек — перепроверяем геолокацию.
+    if (state == AppLifecycleState.resumed && _location is! Located) {
+      _locate();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _map.dispose();
     super.dispose();
   }
@@ -50,13 +62,19 @@ class _GymsMapScreenState extends ConsumerState<GymsMapScreen> {
   void _camera(VoidCallback op) => _ready ? op() : _afterReady = op;
 
   Future<void> _locate() async {
-    final result = await ref.read(locationServiceProvider).current();
-    if (!mounted) return;
-    setState(() => _location = result);
-    final user = _user;
-    if (user == null) return _search(_searchCenter);
-    _camera(() => _map.move(user, 15));
-    await _search(user);
+    if (_locating) return;
+    _locating = true;
+    try {
+      final result = await ref.read(locationServiceProvider).current();
+      if (!mounted) return;
+      setState(() => _location = result);
+      final user = _user;
+      if (user == null) return await _search(_searchCenter);
+      _camera(() => _map.move(user, 15));
+      await _search(user);
+    } finally {
+      _locating = false;
+    }
   }
 
   Future<void> _search(LatLng center) async {
@@ -102,11 +120,6 @@ class _GymsMapScreenState extends ConsumerState<GymsMapScreen> {
     );
   }
 
-  Future<void> _openSettings(Future<void> Function() open) async {
-    await open();
-    if (mounted) await _locate();
-  }
-
   void _showGym(Gym gym) {
     final user = _user;
     final meters = const Distance()(
@@ -135,12 +148,12 @@ class _GymsMapScreenState extends ConsumerState<GymsMapScreen> {
       LocationDeniedForever() => (
         'Без геолокации ищем по центру карты',
         'Открыть настройки',
-        () => _openSettings(location.openAppSettings),
+        location.openAppSettings,
       ),
       LocationOff() => (
         'Геолокация выключена',
         'Включить',
-        () => _openSettings(location.openLocationSettings),
+        location.openLocationSettings,
       ),
       _ => null,
     };
@@ -302,7 +315,16 @@ class _GymSheet extends ConsumerWidget {
                     : () async {
                         final messenger = ScaffoldMessenger.of(context);
                         final navigator = Navigator.of(context);
-                        await ref.read(myGymProvider.notifier).set(gym);
+                        try {
+                          await ref.read(myGymProvider.notifier).set(gym);
+                        } on Object {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Не удалось сохранить зал'),
+                            ),
+                          );
+                          return;
+                        }
                         messenger.showSnackBar(
                           const SnackBar(content: Text('Зал сохранён')),
                         );

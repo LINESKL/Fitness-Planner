@@ -17,9 +17,11 @@ final gymSearchProvider = Provider<GymSearch>(
 );
 
 /// Источник тайлов карты; в тестах подменяется на пустой.
-final tileProviderProvider = Provider<TileProvider>(
-  (ref) => NetworkTileProvider(),
-);
+final tileProviderProvider = Provider<TileProvider>((ref) {
+  final provider = NetworkTileProvider();
+  ref.onDispose(provider.dispose);
+  return provider;
+});
 
 final myGymRepositoryProvider = Provider<MyGymRepository>(
   (ref) => InMemoryMyGymRepository(),
