@@ -54,3 +54,6 @@ firestore-tests/node_modules/
 android/key.properties
 *.jks
 *.keystore
+
+# Временные файлы загрузки символов Crashlytics
+.crashlytics/
