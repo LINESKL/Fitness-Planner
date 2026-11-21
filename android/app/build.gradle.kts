@@ -1,3 +1,11 @@
+import java.util.Properties
+
+// android/key.properties создаёт владелец (см. README «Релиз»); без него release подписывается debug-ключом.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -32,11 +40,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (!keystoreProperties.isEmpty) {
+            create("release") {
+                val store = file(keystoreProperties.getProperty("storeFile"))
+                require(store.isAbsolute && store.exists()) {
+                    "storeFile в android/key.properties должен быть абсолютным путём к существующему .jks: $store"
+                }
+                storeFile = store
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }

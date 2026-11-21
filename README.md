@@ -356,3 +356,56 @@ FCM-токен и сохраняет его в `users/{uid}` (`fcmToken`, `token
 - провайдеры и выход: `test/features/workout/presentation/cloud_providers_test.dart`, `sign_out_wipe_test.dart`;
 - push: `test/core/push_service_test.dart`, `test/features/workout/presentation/push_wiring_test.dart`;
 - правила Firestore: `firestore-tests/rules.test.mjs` (эмулятор выше).
+
+## Релиз
+
+### Ключ подписи
+
+Ключ создаёт и хранит владелец, пароль вводит он сам:
+
+```
+keytool -genkey -v -keystore ~/fitness-planner-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+```
+
+Затем создать `android/key.properties` (4 строки; `storeFile` — абсолютный путь, `~` не раскрывается):
+
+```
+storeFile=/Users/<имя>/fitness-planner-upload.jks
+storePassword=...
+keyAlias=upload
+keyPassword=...
+```
+
+Ни `key.properties`, ни `.jks` не попадают в git (см. `.gitignore`). Без `key.properties` release-сборка
+подписывается debug-ключом — так она собирается в CI.
+
+### Сборка
+
+`tool/release.sh` собирает подписанные AAB и APK с `--obfuscate --split-debug-info=build/symbols` и загружает
+символы Dart в Crashlytics (`firebase crashlytics:symbols:upload`). Результат:
+`build/app/outputs/bundle/release/app-release.aab` и `build/app/outputs/flutter-apk/app-release.apk`.
+
+### Отпечатки ключа
+
+```
+keytool -list -v -keystore ~/fitness-planner-upload.jks -alias upload
+```
+
+Из вывода взять SHA-1 и SHA-256 и добавить оба в Firebase, затем обновить конфиг:
+
+```
+firebase apps:android:sha:create 1:742800135927:android:0e29462a54f8a98e0465f2 <SHA>
+firebase apps:sdkconfig android 1:742800135927:android:0e29462a54f8a98e0465f2 -o android/app/google-services.json
+```
+
+SHA-1 также добавить в ограничение Android key: Google Cloud Console → APIs & Services → Credentials →
+Android key → Android apps.
+
+### Раздача
+
+```
+firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
+  --app 1:742800135927:android:0e29462a54f8a98e0465f2 --testers <email> --release-notes "1.0.0 (1)"
+```
+
+Материалы для магазина — в `store/`; политика конфиденциальности — в `store/` (появится в Task 5).
