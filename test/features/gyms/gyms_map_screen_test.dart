@@ -163,6 +163,20 @@ void main() {
     expect(location.calls, 1);
   });
 
+  testWidgets('resume после обычного отказа — без повторного запроса', (
+    tester,
+  ) async {
+    final location = FakeLocation([const LocationDenied(), located]);
+    await _open(
+      tester,
+      location: location,
+      search: FakeSearch((_, _) async => []),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(location.calls, 1);
+  });
+
   testWidgets('повторный «Разрешить» во время запроса игнорируется', (
     tester,
   ) async {

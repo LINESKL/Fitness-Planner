@@ -45,8 +45,10 @@ class _GymsMapScreenState extends ConsumerState<GymsMapScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Вернулись из системных настроек — перепроверяем геолокацию.
-    if (state == AppLifecycleState.resumed && _location is! Located) {
+    // Вернулись из системных настроек — перепроверяем геолокацию. После
+    // обычного отказа не спрашиваем снова на каждом возврате в приложение.
+    if (state == AppLifecycleState.resumed &&
+        (_location is LocationOff || _location is LocationDeniedForever)) {
       _locate();
     }
   }
