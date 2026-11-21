@@ -44,6 +44,10 @@
 - **Каталог**: встроенные упражнения на русском, ~900 упражнений wger, свои упражнения.
 - **Офлайн**: всё хранится локально; идущая тренировка переживает перезапуск приложения.
 - **«Загрузить пример»** в настройках — программа и месяц истории для показа.
+- **Аккаунт и облако**: вход по email, через Google или гостем; данные синхронизируются через Firestore.
+- **Залы рядом**: карта OpenStreetMap с фитнес-залами вокруг и выбор «моего зала».
+- **Фото прогресса** к замерам тела (камера или галерея) — хранятся только на устройстве.
+- **Push-уведомления** через Firebase Cloud Messaging.
 
 ## Как устроена тренировка
 
@@ -256,10 +260,13 @@ flutter test integration_test -d emulator-5554 # на эмуляторе или 
 ## Структура репозитория
 
 - `lib/core/` — тема, роутер, форматирование, общие виджеты
-- `lib/features/<фича>/` — `home` (Сегодня), `program`, `workout`, `progress`, `exercises`, `profile`, `settings` (модель настроек), `auth`;
+- `lib/features/<фича>/` — `home` (Сегодня), `program`, `workout`, `progress`, `exercises`, `profile`, `settings` (модель настроек), `auth`, `gyms` (карта залов);
   внутри — `domain` / `data` / `presentation`
 - `lib/features/workout/data/cloud/` — синхронизация с Firestore: обёртки `Synced…Repository` и слияние `CloudSync`
-- `test/` — unit- и widget-тесты (зеркалят `lib/`)
+- `test/` — unit- и widget-тесты (зеркалят `lib/`), `integration_test/` — сквозной сценарий на устройстве
+- `assets/icon/` — исходники иконки (SVG) и отрисованные PNG
+- `tool/` — `render_icons.sh` (SVG → PNG), `release.sh` (подписанная сборка и символы Crashlytics)
+- `store/` — материалы для магазинов, `docs/privacy-policy.html` — страница политики для GitHub Pages
 - `lib/features/workout/domain/` — в том числе задачи недели 1 на Dart (null safety, классы, коллекции, async/await),
   написанные сразу как доменная логика приложения; тесты — в `test/features/workout/domain/`
 
@@ -363,13 +370,13 @@ FCM-токен и сохраняет его в `users/{uid}` (`fcmToken`, `token
 
 Ключ создаёт и хранит владелец, пароль вводит он сам:
 
-```
+```bash
 keytool -genkey -v -keystore ~/fitness-planner-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 ```
 
 Затем создать `android/key.properties` (4 строки; `storeFile` — абсолютный путь, `~` не раскрывается):
 
-```
+```properties
 storeFile=/Users/<имя>/fitness-planner-upload.jks
 storePassword=...
 keyAlias=upload
@@ -379,21 +386,35 @@ keyPassword=...
 Ни `key.properties`, ни `.jks` не попадают в git (см. `.gitignore`). Без `key.properties` release-сборка
 подписывается debug-ключом — так она собирается в CI.
 
+### Иконка и splash
+
+Исходники — `assets/icon/icon.svg` и `foreground.svg` (без фона, для адаптивной иконки Android).
+
+```bash
+tool/render_icons.sh                      # SVG → PNG (headless Chrome)
+dart run flutter_launcher_icons           # иконки Android и iOS
+dart run flutter_native_splash:create     # splash, включая Android 12+
+```
+
 ### Сборка
 
 `tool/release.sh` собирает подписанные AAB и APK с `--obfuscate --split-debug-info=build/symbols` и загружает
 символы Dart в Crashlytics (`firebase crashlytics:symbols:upload`). Результат:
 `build/app/outputs/bundle/release/app-release.aab` и `build/app/outputs/flutter-apk/app-release.apk`.
 
+Версия берётся из `pubspec.yaml` и видна внизу профиля («Версия 1.0.0 (1)»). Долгое нажатие на неё отправляет
+тестовый сбой в Crashlytics (после подтверждения); отчёт уходит при следующем запуске. В debug-сборке сбор
+отчётов выключен.
+
 ### Отпечатки ключа
 
-```
+```bash
 keytool -list -v -keystore ~/fitness-planner-upload.jks -alias upload
 ```
 
 Из вывода взять SHA-1 и SHA-256 и добавить оба в Firebase, затем обновить конфиг:
 
-```
+```bash
 firebase apps:android:sha:create 1:742800135927:android:0e29462a54f8a98e0465f2 <SHA>
 firebase apps:sdkconfig android 1:742800135927:android:0e29462a54f8a98e0465f2 -o android/app/google-services.json
 ```
@@ -403,7 +424,7 @@ Android key → Android apps.
 
 ### Раздача
 
-```
+```bash
 firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
   --app 1:742800135927:android:0e29462a54f8a98e0465f2 --testers <email> --release-notes "1.0.0 (1)"
 ```
