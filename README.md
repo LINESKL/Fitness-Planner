@@ -407,5 +407,3 @@ Android key → Android apps.
 firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
   --app 1:742800135927:android:0e29462a54f8a98e0465f2 --testers <email> --release-notes "1.0.0 (1)"
 ```
-
-Материалы для магазина — в `store/`; политика конфиденциальности — в `store/` (появится в Task 5).
