@@ -59,6 +59,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Без key.properties (CI/PR) mapping-файл в Firebase не загружаем.
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = !keystoreProperties.isEmpty
+            }
         }
     }
 }

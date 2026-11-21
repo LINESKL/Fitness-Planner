@@ -66,7 +66,7 @@ Fitness Planner — дневник силовых тренировок для т
 
 ## Контакты
 
-- Email разработчика: `<email>` (пустое поле, заполняет владелец перед отправкой в Google Play)
+- Email разработчика: lineskl.aliar@gmail.com
 - Политика конфиденциальности: https://lineskl.github.io/Fitness-Planner/privacy-policy.html
 
 ## Графика
