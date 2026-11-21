@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart' show WatchContext;
 
+import '../../../core/app_version.dart';
+import '../../../core/crash_reporting.dart';
 import '../../../core/format.dart';
 import '../../../core/theme.dart';
 import '../../auth/domain/auth_repository.dart';
@@ -158,6 +160,7 @@ class ProfileScreen extends ConsumerWidget {
           icon: const Icon(Icons.auto_awesome_outlined),
           label: const Text('Загрузить пример'),
         ),
+        const _VersionLine(),
       ],
     );
   }
@@ -434,6 +437,53 @@ class _BodyCard extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Версия сборки; долгое нажатие — тестовый сбой для Crashlytics.
+class _VersionLine extends ConsumerWidget {
+  const _VersionLine();
+
+  Future<void> _testCrash(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Отправить тестовый сбой?'),
+        content: const Text('Приложение закроется, отчёт уйдёт в Crashlytics'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Отправить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) ref.read(crashProvider)();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version = ref.watch(appVersionProvider).value;
+    if (version == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onLongPress: () => _testCrash(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 32),
+        child: Center(
+          child: Text(
+            version,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );

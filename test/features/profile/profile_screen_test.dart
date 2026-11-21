@@ -1,3 +1,5 @@
+import 'package:fitness_planner/core/app_version.dart';
+import 'package:fitness_planner/core/crash_reporting.dart';
 import 'package:fitness_planner/core/format.dart';
 import 'package:fitness_planner/features/auth/domain/auth_repository.dart';
 import 'package:fitness_planner/features/gyms/data/my_gym_repositories.dart';
@@ -10,7 +12,9 @@ import 'package:fitness_planner/features/workout/domain/set_entry.dart';
 import 'package:fitness_planner/features/workout/domain/workout.dart';
 import 'package:fitness_planner/features/workout/presentation/workout_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../helpers/gym_fakes.dart';
 import '../../helpers/pump_app.dart';
@@ -59,6 +63,8 @@ void main() {
     List<BodyEntry> body = const [],
     Gym? gym,
     Size size = const Size(400, 2000),
+    void Function()? onCrash,
+    List<Override> extra = const [],
   }) async {
     final bodyRepo = InMemoryBodyRepository();
     for (final b in body) {
@@ -82,6 +88,8 @@ void main() {
         gymSearchProvider.overrideWithValue(FakeSearch((_, _) async => [])),
         tileProviderProvider.overrideWithValue(FakeTiles()),
         localDataWiperProvider.overrideWithValue(() async => log.add('wipe')),
+        crashProvider.overrideWithValue(onCrash ?? () {}),
+        ...extra,
       ],
     );
     await tester.tap(navItem('Профиль'));
@@ -357,5 +365,81 @@ void main() {
     expect(rail.destinations, hasLength(5));
     expect(find.text('Статистика'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  group('версия', () {
+    const version = 'Версия 1.0.0 (1)';
+
+    setUp(
+      () => PackageInfo.setMockInitialValues(
+        appName: 'Fitness Planner',
+        packageName: 'kz.aliar.fitness_planner',
+        version: '1.0.0',
+        buildNumber: '1',
+        buildSignature: '',
+      ),
+    );
+
+    Future<void> showVersion(WidgetTester tester) => tester.dragUntilVisible(
+      find.text(version),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+
+    testWidgets('внизу профиля', (tester) async {
+      await open(tester);
+      await showVersion(tester);
+      expect(find.text(version), findsOneWidget);
+    });
+
+    testWidgets('долгое нажатие: «Отмена» не роняет, «Отправить» роняет', (
+      tester,
+    ) async {
+      var crashes = 0;
+      await open(tester, onCrash: () => crashes++);
+      await showVersion(tester);
+
+      await tester.longPress(find.text(version));
+      await tester.pumpAndSettle();
+      expect(find.text('Отправить тестовый сбой?'), findsOneWidget);
+      expect(
+        find.text('Приложение закроется, отчёт уйдёт в Crashlytics'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Отмена'));
+      await tester.pumpAndSettle();
+      expect(crashes, 0);
+
+      await tester.longPress(find.text(version));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Отправить'));
+      await tester.pumpAndSettle();
+      expect(crashes, 1);
+    });
+
+    testWidgets('обычное нажатие ничего не делает', (tester) async {
+      var crashes = 0;
+      await open(tester, onCrash: () => crashes++);
+      await showVersion(tester);
+      await tester.tap(find.text(version));
+      await tester.pumpAndSettle();
+      expect(find.text('Отправить тестовый сбой?'), findsNothing);
+      expect(crashes, 0);
+    });
+
+    testWidgets('версия не загрузилась: строки нет, ошибок нет', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        extra: [
+          appVersionProvider.overrideWith((ref) => Future.error('нет плагина')),
+        ],
+      );
+      await tester.drag(find.byType(ListView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Версия'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
