@@ -12,3 +12,5 @@ render() { # <svg> <png> <ширина> <высота>
 
 render assets/icon/icon.svg assets/icon/icon.png 1024 1024
 render assets/icon/foreground.svg assets/icon/foreground.png 1024 1024
+render assets/icon/icon.svg store/icon-512.png 512 512
+render store/feature-graphic.svg store/feature-graphic.png 1024 500

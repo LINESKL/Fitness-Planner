@@ -407,3 +407,6 @@ Android key → Android apps.
 firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
   --app 1:742800135927:android:0e29462a54f8a98e0465f2 --testers <email> --release-notes "1.0.0 (1)"
 ```
+
+Материалы для магазинов (описание, политика конфиденциальности, инструкция для App Store, графика) лежат в
+`store/`. Политика конфиденциальности: https://lineskl.github.io/Fitness-Planner/privacy-policy.html
