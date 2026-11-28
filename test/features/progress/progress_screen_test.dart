@@ -83,6 +83,9 @@ void main() {
     );
 
     expect(find.textContaining('1 тренировка'), findsOneWidget);
+    // В конце месяца клетка дня бывает в шестой строке — ниже тестового окна.
+    await tester.ensureVisible(find.byKey(ValueKey('day-${today.day}')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(ValueKey('day-${today.day}')));
     await tester.pumpAndSettle();
     expect(find.widgetWithText(AppBar, 'Тренировка a'), findsOneWidget);
